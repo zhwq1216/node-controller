@@ -7,6 +7,7 @@ import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.DockerClientConfig;
+import io.metersphere.util.DockerClientService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -75,6 +76,14 @@ class ApplicationTests {
         images.forEach(image -> {
             System.out.println(image);
         });
+    }
+
+    @Test
+    public void test() {
+        DockerClientService clientService = new DockerClientService();
+        DockerClient dockerClient = clientService.connectDocker();
+        CreateContainerResponse containers = clientService.createContainers(dockerClient, "jmeter", "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2");
+        clientService.startContainer(dockerClient, containers.getId());
     }
 
 }
