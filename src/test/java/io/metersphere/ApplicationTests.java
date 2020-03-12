@@ -2,6 +2,7 @@ package io.metersphere;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
@@ -13,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 //@SpringBootTest
 class ApplicationTests {
@@ -30,7 +32,17 @@ class ApplicationTests {
     }
 
     @Test
-    void createContainer() {
+    void createContainer() throws Exception {
+
+        HostConfig hostConfig = HostConfig.newHostConfig()
+                .withPortBindings(PortBinding.parse("9999:27017"))
+                .withBinds(Bind.parse("/tmp/db:/data/db"));
+
+        dockerClient.pullImageCmd("mongo:3.6")
+                .exec(new PullImageResultCallback() {
+
+                })
+                .awaitCompletion();
 
         CreateContainerResponse container
                 = dockerClient.createContainerCmd("mongo:3.6")
@@ -38,9 +50,9 @@ class ApplicationTests {
                 .withName("mongo")
                 .withHostName("baeldung")
                 .withEnv("MONGO_LATEST_VERSION=3.6")
-                .withPortBindings(PortBinding.parse("9999:27017"))
-                .withBinds(Bind.parse("/tmp/db:/data/db"))
+                .withHostConfig(hostConfig)
                 .exec();
+
     }
 
     @Test
