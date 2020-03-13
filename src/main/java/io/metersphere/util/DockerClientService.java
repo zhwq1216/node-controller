@@ -8,13 +8,13 @@ import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
 
 public class DockerClientService {
 
-    final String PATH = "/Users/liyuhao/test";
+    final static String PATH = "/Users/liyuhao/test";
 
     /**
      * 连接docker服务器
      * @return
      */
-    public DockerClient connectDocker(){
+    public static DockerClient connectDocker(){
         DockerClient dockerClient = DockerClientBuilder.getInstance().build();
         Info info = dockerClient.infoCmd().exec();
         System.out.println("docker的环境信息如下：=================");
@@ -27,7 +27,7 @@ public class DockerClientService {
      * @param client
      * @return
      */
-    public CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName){
+    public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName){
         Ports portBindings = new Ports();
         Volume volume = new Volume("/test");
         CreateContainerResponse container = client.createContainerCmd(imageName)
@@ -44,7 +44,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public void startContainer(DockerClient client,String containerId){
+    public static void startContainer(DockerClient client,String containerId){
         client.startContainerCmd(containerId).exec();
     }
 
@@ -53,7 +53,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public void stopContainer(DockerClient client,String containerId){
+    public static void stopContainer(DockerClient client,String containerId){
         client.stopContainerCmd(containerId).exec();
     }
 
@@ -62,7 +62,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public void removeContainer(DockerClient client,String containerId){
+    public static void removeContainer(DockerClient client,String containerId){
         client.removeContainerCmd(containerId).exec();
     }
 
