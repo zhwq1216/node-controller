@@ -1,7 +1,9 @@
 package io.metersphere;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.AttachContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ExecCreateCmd;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -11,9 +13,16 @@ import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
+import org.springframework.web.bind.annotation.PathVariable;
+
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 //@SpringBootTest
@@ -25,10 +34,10 @@ class ApplicationTests {
     static void before() {
         String usrHome = System.getProperty("user.home");
 
-        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
+        /*DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerConfig(usrHome + File.separator + ".docker")
-                .build();
-        dockerClient = DockerClientBuilder.getInstance(config).build();
+                .build();*/
+        dockerClient = DockerClientBuilder.getInstance().build();
     }
 
     @Test
@@ -164,6 +173,77 @@ class ApplicationTests {
             DockerClientService.startContainer(dockerClient, newContainers.getId());
         }
 
+    }
+
+    @Test
+    void testDoTask() {
+
+    }
+
+    // 从本地上传资源到容器
+    @Test
+    void copyArchiveToContainerCmd() {
+       dockerClient.copyArchiveToContainerCmd("18894c7755b1")
+               .withHostResource("/Users/liyuhao/test").withRemotePath("/test").exec();
+    }
+
+    // 从容器中下载资源到本地
+    @Test
+    Object copyArchiveFromContainerCmd(DockerClient dockerClient, String containerID, String local, String remote) {
+        try {
+            InputStream input = dockerClient
+                    .copyArchiveFromContainerCmd(containerID, remote)
+                    .exec();
+            int index;
+            byte[] bytes = new byte[1024];
+            FileOutputStream downloadFile = new FileOutputStream(local);
+            while ((index = input.read(bytes)) != -1) {
+                downloadFile.write(bytes, 0, index);
+                downloadFile.flush();
+            }
+            input.close();
+            downloadFile.close();
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    @Test
+    public void taskPerform() {
+        // 执行 jmx
+        // docker run -it -v /Users/liyuhao/test:/test justb4/jmeter:latest -n -t /test/ceshi3.jmx
+        dockerClient.copyArchiveToContainerCmd("18894c7755b106f33b9a8072944d3f8165f3cb131402901c5e4edc3d2975614e")
+                .withHostResource("/Users/liyuhao/test/ceshi.jmx").withRemotePath("/test").exec();
+        dockerClient.startContainerCmd("18894c7755b106f33b9a8072944d3f8165f3cb131402901c5e4edc3d2975614e").exec();
+//        dockerClient.execCreateCmd("18894c7755b106f33b9a8072944d3f8165f3cb131402901c5e4edc3d2975614e").withAttachStdout(true)
+//                .withCmd("jmeter", "-n", "-t", "/test/ceshi.jmx").exec();
+    }
+
+    @Test
+    public void containerStart1() {
+        int size = 2;
+        String testId = UUID.randomUUID().toString();
+        String containerImage = "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2";
+        ArrayList<String> containerIdList = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            String containerName = testId + i;
+            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
+            containerIdList.add(containerId);
+        }
+        // 从主机复制文件到容器
+        // FileUtil.saveFile(jmxString, "/User/liyuhao/test", "ceshi2.jmx");
+
+        int count = 0;
+        for (int i = 1; i <= containerIdList.size(); i++) {
+            int index = count++ % containerIdList.size();
+            dockerClient.copyArchiveToContainerCmd(containerIdList.get(index))
+                    .withHostResource("/Users/liyuhao/test/test"+i)
+                    .withDirChildrenOnly(true)
+                    .withRemotePath("/test")
+                    .exec();
+        }
+        containerIdList.forEach(containerId -> {DockerClientService.startContainer(dockerClient, containerId);});
     }
 
 }

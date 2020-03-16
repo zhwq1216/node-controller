@@ -4,11 +4,8 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
-import static com.github.dockerjava.api.model.HostConfig.newHostConfig;
 
 public class DockerClientService {
-
-    final static String PATH = "/Users/liyuhao/test";
 
     /**
      * 连接docker服务器
@@ -28,12 +25,8 @@ public class DockerClientService {
      * @return
      */
     public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName){
-        Ports portBindings = new Ports();
-        Volume volume = new Volume("/test");
         CreateContainerResponse container = client.createContainerCmd(imageName)
-                .withVolumes(volume)
                 .withName(containerName)
-                .withHostConfig(newHostConfig().withPortBindings(portBindings).withBinds(new Bind(PATH, volume)))
                 .exec();
         return container;
     }
