@@ -5,16 +5,13 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
+@RestController
 @RequestMapping("jmeter")
 public class JmeterOperateController {
 
@@ -26,38 +23,38 @@ public class JmeterOperateController {
     }
 
     // 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
-    @GetMapping("container/start/{size}")
-    public void containerStart(@PathVariable Integer size) {
-        String testId = UUID.randomUUID().toString();
+    @PostMapping("/container/start")
+    public void containerStart(@RequestBody Request request) {
         String containerImage = "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2";
+        String filePath = "/Users/liyuhao/test";
+        String fileName = "ceshi.jmx";
+
+        int size = request.getSize();
+        String testId = request.getTestId();
+
+        FileUtil.saveFile(request.getFileString(), filePath, fileName);
+
         ArrayList<String> containerIdList = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             String containerName = testId + i;
             String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
+            //  从主机复制文件到容器
+            dockerClient.copyArchiveToContainerCmd(containerId)
+                    .withHostResource(filePath)
+                    .withDirChildrenOnly(false)
+                    .withRemotePath("/")
+                    .exec();
             containerIdList.add(containerId);
         }
 
-        //  ~/test/container1/*.jmx  ~/test/container2/*.jmx
-        //  FileUtil.saveFile(jmxString, "/User/liyuhao/test", "ceshi2.jmx");
-
-        //  从主机复制文件到容器 (一个容器对应一个文件夹)
-        int count = 0;
-        for (int i = 1; i <= containerIdList.size(); i++) {
-            int index = count++ % containerIdList.size();
-            dockerClient.copyArchiveToContainerCmd(containerIdList.get(index))
-                    .withHostResource("/Users/liyuhao/test/test"+i)
-                    .withDirChildrenOnly(true)
-                    .withRemotePath("/test")
-                    .exec();
-        }
         containerIdList.forEach(containerId -> {DockerClientService.startContainer(dockerClient, containerId);});
     }
 
     // 上传测试相关文件，将请求传过来的脚本、测试数据等文件，拷贝到上述容器中
     @PostMapping("/upload/task")
     public void uploadFile(String jmxString) {
-        // 挂载数据到启动的容器
-        FileUtil.saveFile(jmxString, "/User/liyuhao/test", "ceshi2.jmx");
+        //  挂载数据到启动的容器
+        //  FileUtil.saveFile(jmxString, "/User/liyuhao/test", "ceshi2.jmx");
     }
 
     // 启动测试任务，控制上述容器执行 jmeter 相关命令开始进行测试
@@ -75,6 +72,7 @@ public class JmeterOperateController {
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
                 .withShowAll(true)
+                .withStatusFilter(Arrays.asList("running"))
                 .withNameFilter(Arrays.asList(testId))
                 .exec();
         // container stop
@@ -83,12 +81,13 @@ public class JmeterOperateController {
 
     // 查询测试任务状态，控制上述容器执行相关命令查询 JMeter 测试状态
     @PostMapping("/task/status/{testId}")
-    public void getTaskStatus(@PathVariable String testId) {
-        dockerClient.listContainersCmd()
-                .withStatusFilter(Arrays.asList("created","restarting","running","paused","exited"))
+    public List<Container> getTaskStatus(@PathVariable String testId) {
+        List<Container> containerList = dockerClient.listContainersCmd()
+                .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
                 .withNameFilter(Arrays.asList(testId))
                 .exec();
         // 查询执行的状态
+        return containerList;
     }
 
 }
