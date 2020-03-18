@@ -25,13 +25,18 @@ public class JmeterOperateController {
     // 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
     @PostMapping("/container/start")
     public void containerStart(@RequestBody Request request) {
-        String containerImage = "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2";
-        String filePath = "/Users/liyuhao/test";
-        String fileName = "ceshi.jmx";
-
         int size = request.getSize();
         String testId = request.getTestId();
 
+        String containerImage = "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2";
+        String filePath = "/Users/liyuhao/test/" + testId;
+        String fileName = "ceshi.jmx";
+
+
+        List<Container> list = dockerClient.listContainersCmd().withShowAll(true).withNameFilter(Arrays.asList(testId)).exec();
+        if (!list.isEmpty()) { list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId())); }
+
+        //  每个测试生成一个文件夹
         FileUtil.saveFile(request.getFileString(), filePath, fileName);
 
         ArrayList<String> containerIdList = new ArrayList<>();
@@ -41,8 +46,8 @@ public class JmeterOperateController {
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)
                     .withHostResource(filePath)
-                    .withDirChildrenOnly(false)
-                    .withRemotePath("/")
+                    .withDirChildrenOnly(true)
+                    .withRemotePath("/test")
                     .exec();
             containerIdList.add(containerId);
         }
@@ -80,7 +85,7 @@ public class JmeterOperateController {
     }
 
     // 查询测试任务状态，控制上述容器执行相关命令查询 JMeter 测试状态
-    @PostMapping("/task/status/{testId}")
+    @GetMapping("/task/status/{testId}")
     public List<Container> getTaskStatus(@PathVariable String testId) {
         List<Container> containerList = dockerClient.listContainersCmd()
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
