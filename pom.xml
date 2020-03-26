@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>io.metersphere</groupId>
-    <artifactId>metersphere-node-controller</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>metersphere-node-controller</name>
-    <description>metersphere-node-controller</description>
+    <artifactId>node-controller</artifactId>
+    <version>1.0</version>
+    <name>node-controller</name>
+    <description>node-controller</description>
 
     <properties>
         <java.version>1.8</java.version>
