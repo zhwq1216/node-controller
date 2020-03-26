@@ -3,11 +3,12 @@ package io.metersphere.controller;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
+import io.metersphere.controller.request.DockerLoginRequest;
+import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,22 +17,16 @@ import java.util.List;
 @RequestMapping("jmeter")
 public class JmeterOperateController {
 
-    private DockerClient dockerClient;
-
-    @PostConstruct
-    public void init() {
-        dockerClient = DockerClientService.connectDocker();
-    }
-
     // 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
     @PostMapping("/container/start")
-    public void containerStart(@RequestBody Request request) {
-        int size = request.getSize();
-        String testId = request.getTestId();
+    public void containerStart(@RequestBody TestRequest testRequest) {
+        DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
+        int size = testRequest.getSize();
+        String testId = testRequest.getTestId();
 
-        String containerImage = request.getImage();
+        String containerImage = testRequest.getImage();
         String filePath = "/tmp/" + testId;
-        String fileName = request.getTestId() + ".jmx";
+        String fileName = testRequest.getTestId() + ".jmx";
 
 
         List<Container> list = dockerClient.listContainersCmd().withShowAll(true).withNameFilter(Arrays.asList(testId)).exec();
@@ -40,9 +35,9 @@ public class JmeterOperateController {
         }
 
         //  每个测试生成一个文件夹
-        FileUtil.saveFile(request.getFileString(), filePath, fileName);
+        FileUtil.saveFile(testRequest.getFileString(), filePath, fileName);
         // 保存测试数据文件
-        request.getTestData().forEach((k, v) -> {
+        testRequest.getTestData().forEach((k, v) -> {
             FileUtil.saveFile(v, filePath, k);
         });
 
@@ -82,7 +77,9 @@ public class JmeterOperateController {
 
     // 停止指定测试任务，控制上述容器停止指定的 JMeter 测试
     @PostMapping("container/stop/{testId}")
-    public void containerStop(@PathVariable String testId) {
+    public void containerStop(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
+        DockerClient dockerClient = DockerClientService.connectDocker(request);
+
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
                 .withShowAll(true)
@@ -95,7 +92,8 @@ public class JmeterOperateController {
 
     // 查询测试任务状态，控制上述容器执行相关命令查询 JMeter 测试状态
     @GetMapping("/task/status/{testId}")
-    public List<Container> getTaskStatus(@PathVariable String testId) {
+    public List<Container> getTaskStatus(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
+        DockerClient dockerClient = DockerClientService.connectDocker(request);
         List<Container> containerList = dockerClient.listContainersCmd()
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
                 .withNameFilter(Arrays.asList(testId))
