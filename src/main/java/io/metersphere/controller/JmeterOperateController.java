@@ -6,6 +6,7 @@ import com.github.dockerjava.api.model.Container;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
 import org.springframework.web.bind.annotation.*;
+
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,16 +29,22 @@ public class JmeterOperateController {
         int size = request.getSize();
         String testId = request.getTestId();
 
-        String containerImage = "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2";
-        String filePath = "/Users/liyuhao/test/" + testId;
-        String fileName = "ceshi.jmx";
+        String containerImage = request.getImage();
+        String filePath = "/tmp/" + testId;
+        String fileName = request.getTestId() + ".jmx";
 
 
         List<Container> list = dockerClient.listContainersCmd().withShowAll(true).withNameFilter(Arrays.asList(testId)).exec();
-        if (!list.isEmpty()) { list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId())); }
+        if (!list.isEmpty()) {
+            list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId()));
+        }
 
         //  每个测试生成一个文件夹
         FileUtil.saveFile(request.getFileString(), filePath, fileName);
+        // 保存测试数据文件
+        request.getTestData().forEach((k, v) -> {
+            FileUtil.saveFile(v, filePath, k);
+        });
 
         ArrayList<String> containerIdList = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -52,7 +59,9 @@ public class JmeterOperateController {
             containerIdList.add(containerId);
         }
 
-        containerIdList.forEach(containerId -> {DockerClientService.startContainer(dockerClient, containerId);});
+        containerIdList.forEach(containerId -> {
+            DockerClientService.startContainer(dockerClient, containerId);
+        });
     }
 
     // 上传测试相关文件，将请求传过来的脚本、测试数据等文件，拷贝到上述容器中
