@@ -91,7 +91,7 @@ public class JmeterOperateController {
     }
 
     // 查询测试任务状态，控制上述容器执行相关命令查询 JMeter 测试状态
-    @GetMapping("/task/status/{testId}")
+    @PostMapping("/task/status/{testId}")
     public List<Container> getTaskStatus(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
         DockerClient dockerClient = DockerClientService.connectDocker(request);
         List<Container> containerList = dockerClient.listContainersCmd()
