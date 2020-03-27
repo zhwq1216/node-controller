@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -27,7 +28,11 @@ public class JmeterOperateService {
         String fileName = testRequest.getTestId() + ".jmx";
 
 
-        List<Container> list = dockerClient.listContainersCmd().withShowAll(true).withNameFilter(Arrays.asList(testId)).exec();
+        List<Container> list = dockerClient.listContainersCmd()
+                .withShowAll(true)
+                .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
+                .withNameFilter(Collections.singletonList(testId))
+                .exec();
         if (!list.isEmpty()) {
             list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId()));
         }
@@ -46,7 +51,7 @@ public class JmeterOperateService {
 
                 ArrayList<String> containerIdList = new ArrayList<>();
                 for (int i = 0; i < size; i++) {
-                    String containerName = testId + i;
+                    String containerName = testId + "-" + i;
                     String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
                     //  从主机复制文件到容器
                     dockerClient.copyArchiveToContainerCmd(containerId)
