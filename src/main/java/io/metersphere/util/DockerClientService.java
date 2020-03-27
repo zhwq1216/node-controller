@@ -17,8 +17,8 @@ public class DockerClientService {
     public static DockerClient connectDocker() {
         DockerClient dockerClient = DockerClientBuilder.getInstance().build();
         Info info = dockerClient.infoCmd().exec();
-        System.out.println("docker的环境信息如下：=================");
-        System.out.println(info);
+        LogUtil.info("docker的环境信息如下：=================");
+        LogUtil.info(info);
         return dockerClient;
     }
 
@@ -30,8 +30,8 @@ public class DockerClientService {
                 .build();
         DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
         Info info = dockerClient.infoCmd().exec();
-        System.out.println("docker的环境信息如下：=================");
-        System.out.println(info);
+        LogUtil.info("docker的环境信息如下：=================");
+        LogUtil.info(info);
         return dockerClient;
     }
 
