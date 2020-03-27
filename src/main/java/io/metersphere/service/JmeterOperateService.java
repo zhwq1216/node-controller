@@ -8,6 +8,7 @@ import io.metersphere.controller.request.DockerLoginRequest;
 import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
+import io.metersphere.util.LogUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public class JmeterOperateService {
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
                 .withNameFilter(Collections.singletonList(testId))
                 .exec();
+        LogUtil.info("container size: " + list.size());
         if (!list.isEmpty()) {
             list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId()));
         }
@@ -47,24 +49,25 @@ public class JmeterOperateService {
         dockerClient.pullImageCmd(containerImage).exec(new PullImageResultCallback() {
             @Override
             public void onNext(PullResponseItem item) {
-                super.onNext(item);
+                if (item.isPullSuccessIndicated()) {
+                    ArrayList<String> containerIdList = new ArrayList<>();
+                    for (int i = 0; i < size; i++) {
+                        String containerName = testId + "-" + i;
+                        String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
+                        //  从主机复制文件到容器
+                        dockerClient.copyArchiveToContainerCmd(containerId)
+                                .withHostResource(filePath)
+                                .withDirChildrenOnly(true)
+                                .withRemotePath("/test")
+                                .exec();
+                        containerIdList.add(containerId);
+                    }
 
-                ArrayList<String> containerIdList = new ArrayList<>();
-                for (int i = 0; i < size; i++) {
-                    String containerName = testId + "-" + i;
-                    String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
-                    //  从主机复制文件到容器
-                    dockerClient.copyArchiveToContainerCmd(containerId)
-                            .withHostResource(filePath)
-                            .withDirChildrenOnly(true)
-                            .withRemotePath("/test")
-                            .exec();
-                    containerIdList.add(containerId);
+                    containerIdList.forEach(containerId -> {
+                        DockerClientService.startContainer(dockerClient, containerId);
+                    });
                 }
 
-                containerIdList.forEach(containerId -> {
-                    DockerClientService.startContainer(dockerClient, containerId);
-                });
             }
         });
 
