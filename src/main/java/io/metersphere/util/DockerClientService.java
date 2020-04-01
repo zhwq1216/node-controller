@@ -6,6 +6,7 @@ import com.github.dockerjava.api.model.Info;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.controller.request.DockerLoginRequest;
+import org.apache.commons.lang.StringUtils;
 
 public class DockerClientService {
 
@@ -23,6 +24,9 @@ public class DockerClientService {
     }
 
     public static DockerClient connectDocker(DockerLoginRequest request) {
+        if (StringUtils.isBlank(request.getRegistry()) || StringUtils.isBlank(request.getUsername()) || StringUtils.isBlank(request.getPassword())) {
+            return connectDocker();
+        }
         DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withRegistryUrl(request.getRegistry())
                 .withRegistryUsername(request.getUsername())
