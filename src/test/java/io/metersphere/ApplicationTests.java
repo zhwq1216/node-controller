@@ -1,22 +1,15 @@
 package io.metersphere;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.AttachContainerCmd;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.ExecCreateCmd;
 import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.*;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.core.DockerClientConfig;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestTemplate;
-import org.springframework.web.bind.annotation.PathVariable;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -152,7 +145,7 @@ class ApplicationTests {
                 "  </hashTree>\n" +
                 "</jmeterTestPlan>\n";
         FileUtil.saveFile(content, "/Users/liyuhao/test/test0", "ceshi3.jmx");
-       // DockerClientService.startContainer(dockerClient, containers.getId());
+        // DockerClientService.startContainer(dockerClient, containers.getId());
     }
 
     @Test
@@ -183,8 +176,8 @@ class ApplicationTests {
     // 从本地上传资源到容器
     @Test
     void copyArchiveToContainerCmd() {
-       dockerClient.copyArchiveToContainerCmd("18894c7755b1")
-               .withHostResource("/Users/liyuhao/test").withRemotePath("/test").exec();
+        dockerClient.copyArchiveToContainerCmd("18894c7755b1")
+                .withHostResource("/Users/liyuhao/test").withRemotePath("/test").exec();
     }
 
     // 从容器中下载资源到本地
@@ -294,7 +287,9 @@ class ApplicationTests {
             containerIdList.add(containerId);
         }
 
-        containerIdList.forEach(containerId -> {DockerClientService.startContainer(dockerClient, containerId);});
+        containerIdList.forEach(containerId -> {
+            DockerClientService.startContainer(dockerClient, containerId);
+        });
     }
 
     @Test
@@ -322,4 +317,21 @@ class ApplicationTests {
         list.forEach(container -> DockerClientService.stopContainer(dockerClient, container.getId()));
     }
 
+    @Test
+    public void searchImage() {
+        List<Image> imageList = dockerClient.listImagesCmd().exec();
+        List<Image> collect = imageList.stream().filter(image -> {
+            String[] repoTags = image.getRepoTags();
+            if (repoTags == null) {
+                return false;
+            }
+            for (String repoTag : repoTags) {
+                if (repoTag.equals("registry.fit2cloud.com/metersphere/jmeter-master:0.0.2")) {
+                    return true;
+                }
+            }
+            return false;
+        }).collect(Collectors.toList());
+        System.out.println(collect.size());
+    }
 }

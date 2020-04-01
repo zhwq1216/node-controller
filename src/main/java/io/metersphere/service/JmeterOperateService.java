@@ -1,20 +1,21 @@
 package io.metersphere.service;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.PullResponseItem;
+import com.github.dockerjava.api.model.Image;
 import io.metersphere.controller.request.DockerLoginRequest;
 import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.FileUtil;
 import io.metersphere.util.LogUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class JmeterOperateService {
@@ -45,32 +46,51 @@ public class JmeterOperateService {
         testRequest.getTestData().forEach((k, v) -> {
             FileUtil.saveFile(v, filePath, k);
         });
-        // pull image
-        dockerClient.pullImageCmd(containerImage).exec(new PullImageResultCallback() {
-            @Override
-            public void onNext(PullResponseItem item) {
-                if (item.isPullSuccessIndicated()) {
-                    ArrayList<String> containerIdList = new ArrayList<>();
-                    for (int i = 0; i < size; i++) {
-                        String containerName = testId + "-" + i;
-                        String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
-                        //  从主机复制文件到容器
-                        dockerClient.copyArchiveToContainerCmd(containerId)
-                                .withHostResource(filePath)
-                                .withDirChildrenOnly(true)
-                                .withRemotePath("/test")
-                                .exec();
-                        containerIdList.add(containerId);
-                    }
 
-                    containerIdList.forEach(containerId -> {
-                        DockerClientService.startContainer(dockerClient, containerId);
-                    });
-                }
+        // 查找镜像
+        searchImage(dockerClient, testRequest.getImage());
 
-            }
+        ArrayList<String> containerIdList = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            String containerName = testId + "-" + i;
+            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
+            //  从主机复制文件到容器
+            dockerClient.copyArchiveToContainerCmd(containerId)
+                    .withHostResource(filePath)
+                    .withDirChildrenOnly(true)
+                    .withRemotePath("/test")
+                    .exec();
+            containerIdList.add(containerId);
+        }
+
+        containerIdList.forEach(containerId -> {
+            DockerClientService.startContainer(dockerClient, containerId);
         });
 
+    }
+
+    private void searchImage(DockerClient dockerClient, String imageName) {
+        // image
+        List<Image> imageList = dockerClient.listImagesCmd().exec();
+        if (CollectionUtils.isEmpty(imageList)) {
+            throw new RuntimeException("Image List is empty");
+        }
+        List<Image> collect = imageList.stream().filter(image -> {
+            String[] repoTags = image.getRepoTags();
+            if (repoTags == null) {
+                return false;
+            }
+            for (String repoTag : repoTags) {
+                if (repoTag.equals(imageName)) {
+                    return true;
+                }
+            }
+            return false;
+        }).collect(Collectors.toList());
+
+        if (collect.size() == 0) {
+            throw new RuntimeException("Image Not Found.");
+        }
     }
 
 
