@@ -10,6 +10,7 @@ import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.LogUtil;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -28,8 +29,8 @@ public class JmeterOperateService {
         String testId = testRequest.getTestId();
 
         String containerImage = testRequest.getImage();
-        String filePath = "/tmp/" + testId;
-        String fileName = testRequest.getTestId() + ".jmx";
+        String filePath = StringUtils.join(new String[]{"", "tmp", "node-data", testId}, File.separator);
+        String fileName = testId + ".jmx";
 
 
         List<Container> list = dockerClient.listContainersCmd()
@@ -58,8 +59,10 @@ public class JmeterOperateService {
         ArrayList<String> containerIdList = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             String containerName = testId + "-" + i;
+            // 创建 hostConfig
+            String jmeterLogDir = filePath + File.separator + "log" + "-" + i;
             HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withBinds(Bind.parse(filePath + ":/jmeter-log"));
+                    .withBinds(Bind.parse(jmeterLogDir + ":/jmeter-log"));
             String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig).getId();
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)

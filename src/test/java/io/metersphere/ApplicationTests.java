@@ -7,6 +7,7 @@ import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.util.DockerClientService;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -336,5 +337,11 @@ class ApplicationTests {
             return false;
         }).collect(Collectors.toList());
         System.out.println(collect.size());
+    }
+
+    @Test
+    public void testJoin() {
+        String filePath = StringUtils.join(new String[]{"", "opt", "fit2cloud", "node-data", "test-id"}, File.separator);
+        System.out.println(filePath);
     }
 }
