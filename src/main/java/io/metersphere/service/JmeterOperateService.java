@@ -29,7 +29,7 @@ public class JmeterOperateService {
         String testId = testRequest.getTestId();
 
         String containerImage = testRequest.getImage();
-        String filePath = StringUtils.join(new String[]{"", "tmp", "node-data", testId}, File.separator);
+        String filePath = StringUtils.join(new String[]{"", "opt", "node-data", testId}, File.separator);
         String fileName = testId + ".jmx";
 
 
