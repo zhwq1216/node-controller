@@ -6,12 +6,15 @@ import com.github.dockerjava.api.command.PullImageResultCallback;
 import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.util.DockerClientService;
-import io.metersphere.util.FileUtil;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -80,7 +83,7 @@ class ApplicationTests {
     }
 
     @Test
-    public void doTestUpload() {
+    public void doTestUpload() throws IOException {
         DockerClient dockerClient = DockerClientService.connectDocker();
         //CreateContainerResponse containers = DockerClientService.createContainers(dockerClient, "jmeter4", "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2");
         String content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -144,7 +147,7 @@ class ApplicationTests {
                 "    <hashTree/>\n" +
                 "  </hashTree>\n" +
                 "</jmeterTestPlan>\n";
-        FileUtil.saveFile(content, "/Users/liyuhao/test/test0", "ceshi3.jmx");
+        FileUtils.writeStringToFile(new File("/Users/liyuhao/test/test0/ceshi3.jmx"), content, StandardCharsets.UTF_8);
         // DockerClientService.startContainer(dockerClient, containers.getId());
     }
 
@@ -162,7 +165,7 @@ class ApplicationTests {
         if (!collect.isEmpty()) {
             DockerClientService.startContainer(dockerClient, collect.get(0).getId());
         } else {
-            CreateContainerResponse newContainers = DockerClientService.createContainers(dockerClient, "jmeter", "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2");
+            CreateContainerResponse newContainers = DockerClientService.createContainers(dockerClient, "jmeter", "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2", HostConfig.newHostConfig());
             DockerClientService.startContainer(dockerClient, newContainers.getId());
         }
 
@@ -214,7 +217,7 @@ class ApplicationTests {
     }
 
     @Test
-    public void containerStart1() {
+    public void containerStart1() throws IOException {
         int size = 2;
         String testId = UUID.randomUUID().toString();
         String containerImage = "registry.fit2cloud.com/metersphere/jmeter-master:0.0.2";
@@ -272,12 +275,12 @@ class ApplicationTests {
                 "  </hashTree>\n" +
                 "</jmeterTestPlan>";
 
-        FileUtil.saveFile(content1, filePath, fileName);
+        FileUtils.writeStringToFile(new File(filePath + File.separator + fileName), content1, StandardCharsets.UTF_8);
 
         ArrayList<String> containerIdList = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             String containerName = testId + i;
-            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
+            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, HostConfig.newHostConfig()).getId();
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)
                     .withHostResource(filePath)

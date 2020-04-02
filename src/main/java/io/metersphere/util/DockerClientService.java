@@ -2,6 +2,7 @@ package io.metersphere.util;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Info;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
@@ -45,9 +46,10 @@ public class DockerClientService {
      * @param client
      * @return
      */
-    public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName) {
+    public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName, HostConfig hostConfig) {
         CreateContainerResponse container = client.createContainerCmd(imageName)
                 .withName(containerName)
+                .withHostConfig(hostConfig)
                 .exec();
         return container;
     }

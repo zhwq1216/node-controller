@@ -8,6 +8,7 @@ import io.metersphere.service.JmeterOperateService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -18,7 +19,7 @@ public class JmeterOperateController {
 
     // 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
     @PostMapping("/container/start")
-    public void containerStart(@RequestBody TestRequest testRequest) {
+    public void containerStart(@RequestBody TestRequest testRequest) throws IOException {
         jmeterOperateService.startContainer(testRequest);
     }
 

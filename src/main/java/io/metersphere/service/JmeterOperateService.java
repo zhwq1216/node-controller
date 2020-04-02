@@ -1,26 +1,28 @@
 package io.metersphere.service;
 
 import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
 import io.metersphere.controller.request.DockerLoginRequest;
 import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
-import io.metersphere.util.FileUtil;
 import io.metersphere.util.LogUtil;
+import org.apache.commons.io.FileUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class JmeterOperateService {
 
-    public void startContainer(TestRequest testRequest) {
+    public void startContainer(TestRequest testRequest) throws IOException {
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
         int size = testRequest.getSize();
         String testId = testRequest.getTestId();
@@ -35,17 +37,20 @@ public class JmeterOperateService {
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
                 .withNameFilter(Collections.singletonList(testId))
                 .exec();
-        LogUtil.info("container size: " + list.size());
         if (!list.isEmpty()) {
             list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId()));
         }
 
         //  每个测试生成一个文件夹
-        FileUtil.saveFile(testRequest.getFileString(), filePath, fileName);
+        FileUtils.writeStringToFile(new File(filePath + File.separator + fileName), testRequest.getFileString(), StandardCharsets.UTF_8);
         // 保存测试数据文件
-        testRequest.getTestData().forEach((k, v) -> {
-            FileUtil.saveFile(v, filePath, k);
-        });
+        Map<String, String> testData = testRequest.getTestData();
+        if (!CollectionUtils.isEmpty(testData)) {
+            for (String k : testData.keySet()) {
+                String v = testData.get(k);
+                FileUtils.writeStringToFile(new File(filePath + File.separator + k), v, StandardCharsets.UTF_8);
+            }
+        }
 
         // 查找镜像
         searchImage(dockerClient, testRequest.getImage());
@@ -53,7 +58,9 @@ public class JmeterOperateService {
         ArrayList<String> containerIdList = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             String containerName = testId + "-" + i;
-            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage).getId();
+            HostConfig hostConfig = HostConfig.newHostConfig()
+                    .withBinds(Bind.parse(filePath + ":/jmeter-log"));
+            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig).getId();
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)
                     .withHostResource(filePath)
@@ -65,8 +72,8 @@ public class JmeterOperateService {
 
         containerIdList.forEach(containerId -> {
             DockerClientService.startContainer(dockerClient, containerId);
+            LogUtil.info("Container create started containerId: " + containerId);
         });
-
     }
 
     private void searchImage(DockerClient dockerClient, String imageName) {
