@@ -29,6 +29,8 @@ public class TestJmeterOperate {
         testRequest.setTestData(new HashMap<>());
         testRequest.setSize(1);
         jmeterOperateService.startContainer(testRequest);
+
+        Thread.sleep(1000 * 1000L);
     }
 
     @Test

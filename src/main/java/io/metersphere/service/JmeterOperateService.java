@@ -1,7 +1,7 @@
 package io.metersphere.service;
 
 import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.command.WaitContainerResultCallback;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
@@ -61,8 +61,9 @@ public class JmeterOperateService {
             String containerName = testId + "-" + i;
             // 创建 hostConfig
             String jmeterLogDir = filePath + File.separator + "log" + "-" + i;
-            HostConfig hostConfig = HostConfig.newHostConfig()
-                    .withBinds(Bind.parse(jmeterLogDir + ":/jmeter-log"));
+            // todo 是否关联日志
+            HostConfig hostConfig = HostConfig.newHostConfig();
+//                    .withBinds(Bind.parse(jmeterLogDir + ":/jmeter-log"));
             String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig).getId();
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)
@@ -76,6 +77,20 @@ public class JmeterOperateService {
         containerIdList.forEach(containerId -> {
             DockerClientService.startContainer(dockerClient, containerId);
             LogUtil.info("Container create started containerId: " + containerId);
+            dockerClient.waitContainerCmd(containerId)
+                    .exec(new WaitContainerResultCallback() {
+                        @Override
+                        public void onComplete() {
+                            // 清理文件夹
+                            try {
+                                FileUtils.forceDelete(new File(filePath));
+                                LogUtil.info("Remove dir completed.");
+                            } catch (IOException e) {
+                                LogUtil.error("Remove dir error: ", e);
+                            }
+                            LogUtil.info("completed....");
+                        }
+                    });
         });
     }
 
