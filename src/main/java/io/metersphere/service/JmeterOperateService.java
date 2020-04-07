@@ -17,7 +17,10 @@ import org.springframework.util.CollectionUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,15 +35,6 @@ public class JmeterOperateService {
         String filePath = StringUtils.join(new String[]{"", "opt", "node-data", testId}, File.separator);
         String fileName = testId + ".jmx";
 
-
-        List<Container> list = dockerClient.listContainersCmd()
-                .withShowAll(true)
-                .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
-                .withNameFilter(Collections.singletonList(testId))
-                .exec();
-        if (!list.isEmpty()) {
-            list.forEach(cId -> DockerClientService.removeContainer(dockerClient, cId.getId()));
-        }
 
         //  每个测试生成一个文件夹
         FileUtils.writeStringToFile(new File(filePath + File.separator + fileName), testRequest.getFileString(), StandardCharsets.UTF_8);
