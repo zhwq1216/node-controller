@@ -79,6 +79,8 @@ public class JmeterOperateService {
                             try {
                                 FileUtils.forceDelete(new File(filePath));
                                 LogUtil.info("Remove dir completed.");
+                                DockerClientService.removeContainer(dockerClient, containerId);
+                                LogUtil.info("Remove container completed: " + containerId);
                             } catch (IOException e) {
                                 LogUtil.error("Remove dir error: ", e);
                             }
