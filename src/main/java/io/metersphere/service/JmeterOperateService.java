@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class JmeterOperateService {
 
     public void startContainer(TestRequest testRequest) throws IOException {
+        LogUtil.info("Receive start container request, test id: {}", testRequest.getTestId());
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
         int size = testRequest.getSize();
         String testId = testRequest.getTestId();
@@ -116,6 +117,7 @@ public class JmeterOperateService {
 
 
     public void stopContainer(String testId, DockerLoginRequest request) {
+        LogUtil.info("Receive stop container request, test: {}", testId);
         DockerClient dockerClient = DockerClientService.connectDocker(request);
 
         // container filter

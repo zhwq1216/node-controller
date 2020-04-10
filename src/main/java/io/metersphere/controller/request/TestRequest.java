@@ -1,8 +1,11 @@
 package io.metersphere.controller.request;
 
+import lombok.Data;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@Data
 public class TestRequest extends DockerLoginRequest {
 
     private int size;
@@ -10,44 +13,4 @@ public class TestRequest extends DockerLoginRequest {
     private String testId;
     private String image;
     private Map<String, String> testData = new HashMap<>();
-
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
-
-    public String getFileString() {
-        return fileString;
-    }
-
-    public void setFileString(String fileString) {
-        this.fileString = fileString;
-    }
-
-    public String getTestId() {
-        return testId;
-    }
-
-    public void setTestId(String testId) {
-        this.testId = testId;
-    }
-
-    public String getImage() {
-        return image;
-    }
-
-    public void setImage(String image) {
-        this.image = image;
-    }
-
-    public Map<String, String> getTestData() {
-        return testData;
-    }
-
-    public void setTestData(Map<String, String> testData) {
-        this.testData = testData;
-    }
 }
