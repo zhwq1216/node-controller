@@ -3,8 +3,10 @@ package io.metersphere.service;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
 import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
+import com.github.dockerjava.core.InvocationBuilder;
 import io.metersphere.controller.request.DockerLoginRequest;
 import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
@@ -17,10 +19,7 @@ import org.springframework.util.CollectionUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -123,8 +122,8 @@ public class JmeterOperateService {
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
                 .withShowAll(true)
-                .withStatusFilter(Arrays.asList("running"))
-                .withNameFilter(Arrays.asList(testId))
+                .withStatusFilter(Collections.singletonList("running"))
+                .withNameFilter(Collections.singletonList(testId))
                 .exec();
         // container stop
         list.forEach(container -> DockerClientService.stopContainer(dockerClient, container.getId()));
@@ -134,9 +133,37 @@ public class JmeterOperateService {
         DockerClient dockerClient = DockerClientService.connectDocker(request);
         List<Container> containerList = dockerClient.listContainersCmd()
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
-                .withNameFilter(Arrays.asList(testId))
+                .withNameFilter(Collections.singletonList(testId))
                 .exec();
         // 查询执行的状态
         return containerList;
+    }
+
+    public String logContainer(String testId, DockerLoginRequest request) {
+        LogUtil.info("Receive logs container request, test: {}", testId);
+        DockerClient dockerClient = DockerClientService.connectDocker(request);
+
+        // container filter
+        List<Container> list = dockerClient.listContainersCmd()
+                .withShowAll(true)
+                .withStatusFilter(Collections.singletonList("running"))
+                .withNameFilter(Collections.singletonList(testId))
+                .exec();
+
+        StringBuilder sb = new StringBuilder();
+        if (list.size() > 0) {
+            dockerClient.logContainerCmd(list.get(0).getId())
+                    .withFollowStream(true)
+                    .withStdOut(true)
+                    .withStdErr(true)
+                    .withTailAll()
+                    .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
+                        @Override
+                        public void onNext(Frame item) {
+                            sb.append(item.toString()).append("\n");
+                        }
+                    });
+        }
+        return sb.toString();
     }
 }

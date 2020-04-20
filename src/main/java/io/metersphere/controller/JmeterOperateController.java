@@ -17,9 +17,11 @@ public class JmeterOperateController {
     @Resource
     private JmeterOperateService jmeterOperateService;
 
-    // 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
+    /**
+     * 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
+     */
     @PostMapping("/container/start")
-    public void containerStart(@RequestBody TestRequest testRequest) throws IOException {
+    public void startContainer(@RequestBody TestRequest testRequest) throws IOException {
         jmeterOperateService.startContainer(testRequest);
     }
 
@@ -39,10 +41,20 @@ public class JmeterOperateController {
         // dockerClient.execCreateCmd("18894c7755b1").withAttachStdout(true).withCmd("jmeter", "-n", "-t", "/test/*.jmx");
     }
 
-    // 停止指定测试任务，控制上述容器停止指定的 JMeter 测试
+    /**
+     * 停止指定测试任务，控制上述容器停止指定的 JMeter 测试
+     */
     @PostMapping("container/stop/{testId}")
-    public void containerStop(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
+    public void stopContainer(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
         jmeterOperateService.stopContainer(testId, request);
+    }
+
+    /**
+     * 停止指定测试任务，控制上述容器停止指定的 JMeter 测试
+     */
+    @PostMapping("container/log/{testId}")
+    public String logContainer(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
+        return jmeterOperateService.logContainer(testId, request);
     }
 
     // 查询测试任务状态，控制上述容器执行相关命令查询 JMeter 测试状态
