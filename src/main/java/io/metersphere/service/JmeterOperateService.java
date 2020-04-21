@@ -160,7 +160,7 @@ public class JmeterOperateService {
                             public void onNext(Frame item) {
                                 sb.append(item.toString()).append("\n");
                             }
-                        }).awaitCompletion(10, TimeUnit.MILLISECONDS);
+                        }).awaitCompletion(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 LogUtil.error(e);
             }
