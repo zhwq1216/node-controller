@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -140,26 +141,29 @@ public class JmeterOperateService {
         DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
-        int index = 0;
         List<Container> list = dockerClient.listContainersCmd()
                 .withShowAll(true)
                 .withStatusFilter(Collections.singletonList("running"))
-                .withNameFilter(Collections.singletonList(testId + "-" + index))
+                .withNameFilter(Collections.singletonList(testId))
                 .exec();
 
         StringBuilder sb = new StringBuilder();
         if (list.size() > 0) {
-            dockerClient.logContainerCmd(list.get(0).getId())
-                    .withFollowStream(true)
-                    .withStdOut(true)
-                    .withStdErr(true)
-                    .withTailAll()
-                    .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
-                        @Override
-                        public void onNext(Frame item) {
-                            sb.append(item.toString()).append("\n");
-                        }
-                    });
+            try {
+                dockerClient.logContainerCmd(list.get(0).getId())
+                        .withFollowStream(true)
+                        .withStdOut(true)
+                        .withStdErr(true)
+                        .withTailAll()
+                        .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
+                            @Override
+                            public void onNext(Frame item) {
+                                sb.append(item.toString()).append("\n");
+                            }
+                        }).awaitCompletion(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                LogUtil.error(e);
+            }
         }
         return sb.toString();
     }
