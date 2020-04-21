@@ -2,7 +2,6 @@ package io.metersphere.controller;
 
 
 import com.github.dockerjava.api.model.Container;
-import io.metersphere.controller.request.DockerLoginRequest;
 import io.metersphere.controller.request.TestRequest;
 import io.metersphere.service.JmeterOperateService;
 import org.springframework.web.bind.annotation.*;
@@ -44,23 +43,23 @@ public class JmeterOperateController {
     /**
      * 停止指定测试任务，控制上述容器停止指定的 JMeter 测试
      */
-    @PostMapping("container/stop/{testId}")
-    public void stopContainer(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
-        jmeterOperateService.stopContainer(testId, request);
+    @GetMapping("container/stop/{testId}")
+    public void stopContainer(@PathVariable String testId) {
+        jmeterOperateService.stopContainer(testId);
     }
 
     /**
      * 停止指定测试任务，控制上述容器停止指定的 JMeter 测试
      */
-    @PostMapping("container/log/{testId}")
-    public String logContainer(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
-        return jmeterOperateService.logContainer(testId, request);
+    @GetMapping("container/log/{testId}")
+    public String logContainer(@PathVariable String testId) {
+        return jmeterOperateService.logContainer(testId);
     }
 
     // 查询测试任务状态，控制上述容器执行相关命令查询 JMeter 测试状态
-    @PostMapping("/task/status/{testId}")
-    public List<Container> getTaskStatus(@PathVariable String testId, @RequestBody DockerLoginRequest request) {
-        return jmeterOperateService.taskStatus(testId, request);
+    @GetMapping("/task/status/{testId}")
+    public List<Container> getTaskStatus(@PathVariable String testId) {
+        return jmeterOperateService.taskStatus(testId);
     }
 
 }

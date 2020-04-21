@@ -7,7 +7,6 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.InvocationBuilder;
-import io.metersphere.controller.request.DockerLoginRequest;
 import io.metersphere.controller.request.TestRequest;
 import io.metersphere.util.DockerClientService;
 import io.metersphere.util.LogUtil;
@@ -115,9 +114,9 @@ public class JmeterOperateService {
     }
 
 
-    public void stopContainer(String testId, DockerLoginRequest request) {
+    public void stopContainer(String testId) {
         LogUtil.info("Receive stop container request, test: {}", testId);
-        DockerClient dockerClient = DockerClientService.connectDocker(request);
+        DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
@@ -129,8 +128,8 @@ public class JmeterOperateService {
         list.forEach(container -> DockerClientService.stopContainer(dockerClient, container.getId()));
     }
 
-    public List<Container> taskStatus(String testId, DockerLoginRequest request) {
-        DockerClient dockerClient = DockerClientService.connectDocker(request);
+    public List<Container> taskStatus(String testId) {
+        DockerClient dockerClient = DockerClientService.connectDocker();
         List<Container> containerList = dockerClient.listContainersCmd()
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
                 .withNameFilter(Collections.singletonList(testId))
@@ -139,9 +138,9 @@ public class JmeterOperateService {
         return containerList;
     }
 
-    public String logContainer(String testId, DockerLoginRequest request) {
+    public String logContainer(String testId) {
         LogUtil.info("Receive logs container request, test: {}", testId);
-        DockerClient dockerClient = DockerClientService.connectDocker(request);
+        DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
