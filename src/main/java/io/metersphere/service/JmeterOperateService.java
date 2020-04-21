@@ -53,10 +53,7 @@ public class JmeterOperateService {
         for (int i = 0; i < size; i++) {
             String containerName = testId + "-" + i;
             // 创建 hostConfig
-            String jmeterLogDir = filePath + File.separator + "log" + "-" + i;
-            // todo 是否关联日志
             HostConfig hostConfig = HostConfig.newHostConfig();
-//                    .withBinds(Bind.parse(jmeterLogDir + ":/jmeter-log"));
             String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig).getId();
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)
@@ -143,10 +140,11 @@ public class JmeterOperateService {
         DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
+        int index = 0;
         List<Container> list = dockerClient.listContainersCmd()
                 .withShowAll(true)
                 .withStatusFilter(Collections.singletonList("running"))
-                .withNameFilter(Collections.singletonList(testId))
+                .withNameFilter(Collections.singletonList(testId + "-" + index))
                 .exec();
 
         StringBuilder sb = new StringBuilder();

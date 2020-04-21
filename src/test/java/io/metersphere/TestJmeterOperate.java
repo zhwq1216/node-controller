@@ -46,6 +46,12 @@ public class TestJmeterOperate {
     }
 
     @Test
+    public void testLogContainer() {
+        String s = jmeterOperateService.logContainer("test-id");
+        System.out.println(s);
+    }
+
+    @Test
     public void testContainerLog() throws Exception {
         DockerClient dockerClient = DockerClientService.connectDocker();
         List<Container> containerList = dockerClient.listContainersCmd()
