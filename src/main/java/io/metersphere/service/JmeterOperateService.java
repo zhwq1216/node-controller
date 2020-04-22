@@ -158,7 +158,7 @@ public class JmeterOperateService {
                         .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
                             @Override
                             public void onNext(Frame item) {
-                                sb.append(item.toString()).append("\n");
+                                sb.append(new String(item.getPayload()).trim()).append("\n");
                             }
                         }).awaitCompletion(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
