@@ -13,4 +13,5 @@ public class TestRequest extends DockerLoginRequest {
     private String testId;
     private String image;
     private Map<String, String> testData = new HashMap<>();
+    private Map<String, String> env = new HashMap<>();
 }

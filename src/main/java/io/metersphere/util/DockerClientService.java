@@ -46,10 +46,11 @@ public class DockerClientService {
      * @param client
      * @return
      */
-    public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName, HostConfig hostConfig) {
+    public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName, HostConfig hostConfig, String... env) {
         CreateContainerResponse container = client.createContainerCmd(imageName)
                 .withName(containerName)
                 .withHostConfig(hostConfig)
+                .withEnv(env)
                 .exec();
         return container;
     }

@@ -55,7 +55,8 @@ public class JmeterOperateService {
             String containerName = testId + "-" + i;
             // 创建 hostConfig
             HostConfig hostConfig = HostConfig.newHostConfig();
-            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig).getId();
+            String[] envs = getEnvs(testRequest);
+            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig, envs).getId();
             //  从主机复制文件到容器
             dockerClient.copyArchiveToContainerCmd(containerId)
                     .withHostResource(filePath)
@@ -85,6 +86,11 @@ public class JmeterOperateService {
                         }
                     });
         });
+    }
+
+    private String[] getEnvs(TestRequest testRequest) {
+        Map<String, String> env = testRequest.getEnv();
+        return env.keySet().stream().map(k -> k + "=" + env.get(k)).toArray(String[]::new);
     }
 
     private void searchImage(DockerClient dockerClient, String imageName) {
