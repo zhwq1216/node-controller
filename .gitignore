@@ -1,7 +1,6 @@
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
-!**/src/test/**
 
 ### STS ###
 .apt_generated
@@ -17,4 +16,4 @@ target/
 *.iws
 *.iml
 *.ipr
-
+src/test/
