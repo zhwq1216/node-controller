@@ -1,8 +1,10 @@
 package io.metersphere.controller.request;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class DockerLoginRequest {
     private String username;
     private String password;

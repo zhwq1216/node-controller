@@ -1,11 +1,13 @@
 package io.metersphere.controller.request;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Data
+@Getter
+@Setter
 public class TestRequest extends DockerLoginRequest {
 
     private int size;
