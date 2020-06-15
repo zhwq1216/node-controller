@@ -129,7 +129,7 @@ public class JmeterOperateService {
                 .withNameFilter(Collections.singletonList(testId))
                 .exec();
         // container stop
-        list.forEach(container -> DockerClientService.stopContainer(dockerClient, container.getId()));
+        list.forEach(container -> DockerClientService.removeContainer(dockerClient, container.getId()));
     }
 
     public List<Container> taskStatus(String testId) {

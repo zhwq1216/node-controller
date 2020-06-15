@@ -83,7 +83,10 @@ public class DockerClientService {
      * @param containerId
      */
     public static void removeContainer(DockerClient client, String containerId) {
-        client.removeContainerCmd(containerId).exec();
+        client.removeContainerCmd(containerId)
+                .withForce(true)
+                .withRemoveVolumes(true)
+                .exec();
     }
 
 }
