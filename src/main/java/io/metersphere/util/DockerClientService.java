@@ -2,12 +2,16 @@ package io.metersphere.util;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Info;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.controller.request.DockerLoginRequest;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.Collections;
+import java.util.List;
 
 public class DockerClientService {
 
@@ -87,6 +91,19 @@ public class DockerClientService {
                 .withForce(true)
                 .withRemoveVolumes(true)
                 .exec();
+    }
+
+    /**
+     * 容器是否存在
+     * @param client
+     * @param containerId
+     */
+    public static int existContainer(DockerClient client, String containerId) {
+        List<Container> list = client.listContainersCmd()
+                .withShowAll(true)
+                .withIdFilter(Collections.singleton(containerId))
+                .exec();
+        return list.size();
     }
 
 }
