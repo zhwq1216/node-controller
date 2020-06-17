@@ -17,6 +17,9 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -26,6 +29,9 @@ import java.util.stream.Collectors;
 public class JmeterOperateService {
 
     public void startContainer(TestRequest testRequest) throws IOException {
+        String bootstrapServers = testRequest.getEnv().get("BOOTSTRAP_SERVERS");
+        checkKafka(bootstrapServers);
+
         LogUtil.info("Receive start container request, test id: {}", testRequest.getTestId());
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
         int size = testRequest.getSize();
@@ -88,6 +94,30 @@ public class JmeterOperateService {
                         }
                     });
         });
+    }
+
+    private void checkKafka(String bootstrapServers) {
+        String[] servers = StringUtils.split(bootstrapServers, ",");
+        try {
+            for (String s : servers) {
+                String[] ipAndPort = s.split(":");
+                //1,建立tcp
+                String ip = ipAndPort[0];
+                int port = Integer.parseInt(ipAndPort[1]);
+                Socket soc = new Socket();
+                soc.connect(new InetSocketAddress(ip, port), 1000); // 1s timeout
+                //2.输入内容
+                String content = "1010";
+                byte[] bs = content.getBytes();
+                OutputStream os = soc.getOutputStream();
+                os.write(bs);
+                //3.关闭
+                soc.close();
+            }
+        } catch (Exception e) {
+            LogUtil.error(e);
+            throw new RuntimeException("Failed to connect to Kafka");
+        }
     }
 
     private String[] getEnvs(TestRequest testRequest) {
