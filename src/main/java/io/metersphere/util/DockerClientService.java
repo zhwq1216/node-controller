@@ -4,7 +4,6 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.Info;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.controller.request.DockerLoginRequest;
@@ -21,11 +20,7 @@ public class DockerClientService {
      * @return
      */
     public static DockerClient connectDocker() {
-        DockerClient dockerClient = DockerClientBuilder.getInstance().build();
-        Info info = dockerClient.infoCmd().exec();
-        LogUtil.info("docker的环境信息如下：=================");
-        LogUtil.info(info);
-        return dockerClient;
+        return DockerClientBuilder.getInstance().build();
     }
 
     public static DockerClient connectDocker(DockerLoginRequest request) {
@@ -37,11 +32,7 @@ public class DockerClientService {
                 .withRegistryUsername(request.getUsername())
                 .withRegistryPassword(request.getPassword())
                 .build();
-        DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
-        Info info = dockerClient.infoCmd().exec();
-        LogUtil.info("docker的环境信息如下：=================");
-        LogUtil.info(info);
-        return dockerClient;
+        return DockerClientBuilder.getInstance(config).build();
     }
 
     /**
@@ -95,6 +86,7 @@ public class DockerClientService {
 
     /**
      * 容器是否存在
+     *
      * @param client
      * @param containerId
      */
