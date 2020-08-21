@@ -94,6 +94,21 @@ public class JmeterOperateService {
                         }
                     });
         });
+
+        containerIdList.forEach(containerId -> {
+            dockerClient.logContainerCmd(containerId)
+                    .withFollowStream(true)
+                    .withStdOut(true)
+                    .withStdErr(true)
+                    .withTailAll()
+                    .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
+                        @Override
+                        public void onNext(Frame item) {
+                            LogUtil.info(new String(item.getPayload()).trim());
+                        }
+                    });
+
+        });
     }
 
     private void checkKafka(String bootstrapServers) {
