@@ -1,4 +1,4 @@
-package io.metersphere.service;
+package io.metersphere.node.service;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
@@ -7,14 +7,16 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.InvocationBuilder;
-import io.metersphere.controller.request.TestRequest;
-import io.metersphere.util.DockerClientService;
-import io.metersphere.util.LogUtil;
+import io.metersphere.node.config.JmeterProperties;
+import io.metersphere.node.controller.request.TestRequest;
+import io.metersphere.node.util.DockerClientService;
+import io.metersphere.node.util.LogUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class JmeterOperateService {
+    @Resource
+    private JmeterProperties jmeterProperties;
 
     public void startContainer(TestRequest testRequest) throws IOException {
         String bootstrapServers = testRequest.getEnv().get("BOOTSTRAP_SERVERS");
@@ -137,6 +141,8 @@ public class JmeterOperateService {
 
     private String[] getEnvs(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
+        // HEAP
+        env.put("HEAP", jmeterProperties.getHeap());
         return env.keySet().stream().map(k -> k + "=" + env.get(k)).toArray(String[]::new);
     }
 

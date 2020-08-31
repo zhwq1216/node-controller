@@ -1,4 +1,4 @@
-package io.metersphere.util;
+package io.metersphere.node.util;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
@@ -6,7 +6,7 @@ import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
-import io.metersphere.controller.request.DockerLoginRequest;
+import io.metersphere.node.controller.request.DockerLoginRequest;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Collections;

@@ -1,9 +1,9 @@
-package io.metersphere.controller;
+package io.metersphere.node.controller;
 
 
 import com.github.dockerjava.api.model.Container;
-import io.metersphere.controller.request.TestRequest;
-import io.metersphere.service.JmeterOperateService;
+import io.metersphere.node.controller.request.TestRequest;
+import io.metersphere.node.service.JmeterOperateService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
