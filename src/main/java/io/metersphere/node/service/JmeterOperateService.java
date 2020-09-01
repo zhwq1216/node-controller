@@ -23,7 +23,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -38,7 +41,6 @@ public class JmeterOperateService {
 
         LogUtil.info("Receive start container request, test id: {}", testRequest.getTestId());
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
-        int size = testRequest.getSize();
         String testId = testRequest.getTestId();
 
         String containerImage = testRequest.getImage();
@@ -59,60 +61,67 @@ public class JmeterOperateService {
 
         // 查找镜像
         searchImage(dockerClient, testRequest.getImage());
+        // 检查容器是否存在
+        checkContainerExists(dockerClient, testId);
+        // 启动测试
+        startContainer(testRequest, dockerClient, testId, containerImage, filePath);
+    }
 
-        ArrayList<String> containerIdList = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
-            String containerName = testId + "-" + i;
-            // 创建 hostConfig
-            HostConfig hostConfig = HostConfig.newHostConfig();
-            String[] envs = getEnvs(testRequest);
-            String containerId = DockerClientService.createContainers(dockerClient, containerName, containerImage, hostConfig, envs).getId();
-            //  从主机复制文件到容器
-            dockerClient.copyArchiveToContainerCmd(containerId)
-                    .withHostResource(filePath)
-                    .withDirChildrenOnly(true)
-                    .withRemotePath("/test")
-                    .exec();
-            containerIdList.add(containerId);
-        }
+    private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage, String filePath) {
+        // 创建 hostConfig
+        HostConfig hostConfig = HostConfig.newHostConfig();
+        String[] envs = getEnvs(testRequest);
+        String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, envs).getId();
+        //  从主机复制文件到容器
+        dockerClient.copyArchiveToContainerCmd(containerId)
+                .withHostResource(filePath)
+                .withDirChildrenOnly(true)
+                .withRemotePath("/test")
+                .exec();
 
-        containerIdList.forEach(containerId -> {
-            DockerClientService.startContainer(dockerClient, containerId);
-            LogUtil.info("Container create started containerId: " + containerId);
-            dockerClient.waitContainerCmd(containerId)
-                    .exec(new WaitContainerResultCallback() {
-                        @Override
-                        public void onComplete() {
-                            // 清理文件夹
-                            try {
-                                FileUtils.forceDelete(new File(filePath));
-                                LogUtil.info("Remove dir completed.");
-                                if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
-                                    DockerClientService.removeContainer(dockerClient, containerId);
-                                }
-                                LogUtil.info("Remove container completed: " + containerId);
-                            } catch (IOException e) {
-                                LogUtil.error("Remove dir error: ", e);
+        DockerClientService.startContainer(dockerClient, containerId);
+        LogUtil.info("Container create started containerId: " + containerId);
+        dockerClient.waitContainerCmd(containerId)
+                .exec(new WaitContainerResultCallback() {
+                    @Override
+                    public void onComplete() {
+                        // 清理文件夹
+                        try {
+                            FileUtils.forceDelete(new File(filePath));
+                            LogUtil.info("Remove dir completed.");
+                            if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
+                                DockerClientService.removeContainer(dockerClient, containerId);
                             }
-                            LogUtil.info("completed....");
+                            LogUtil.info("Remove container completed: " + containerId);
+                        } catch (IOException e) {
+                            LogUtil.error("Remove dir error: ", e);
                         }
-                    });
-        });
+                        LogUtil.info("completed....");
+                    }
+                });
 
-        containerIdList.forEach(containerId -> {
-            dockerClient.logContainerCmd(containerId)
-                    .withFollowStream(true)
-                    .withStdOut(true)
-                    .withStdErr(true)
-                    .withTailAll()
-                    .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
-                        @Override
-                        public void onNext(Frame item) {
-                            LogUtil.info(new String(item.getPayload()).trim());
-                        }
-                    });
+        dockerClient.logContainerCmd(containerId)
+                .withFollowStream(true)
+                .withStdOut(true)
+                .withStdErr(true)
+                .withTailAll()
+                .exec(new InvocationBuilder.AsyncResultCallback<Frame>() {
+                    @Override
+                    public void onNext(Frame item) {
+                        LogUtil.info(new String(item.getPayload()).trim());
+                    }
+                });
+    }
 
-        });
+    private void checkContainerExists(DockerClient dockerClient, String testId) {
+        List<Container> list = dockerClient.listContainersCmd()
+                .withShowAll(true)
+                .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
+                .withNameFilter(Collections.singletonList(testId))
+                .exec();
+        if (!CollectionUtils.isEmpty(list)) {
+            list.forEach(container -> DockerClientService.removeContainer(dockerClient, container.getId()));
+        }
     }
 
     private void checkKafka(String bootstrapServers) {

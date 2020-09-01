@@ -10,7 +10,6 @@ import java.util.Map;
 @Setter
 public class TestRequest extends DockerLoginRequest {
 
-    private int size;
     private String fileString;
     private String testId;
     private String image;
