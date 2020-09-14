@@ -175,7 +175,7 @@ public class JmeterOperateService {
         }).collect(Collectors.toList());
 
         if (collect.size() == 0) {
-            throw new RuntimeException("Image Not Found.");
+            throw new RuntimeException("Image Not Found: " + imageName);
         }
     }
 
