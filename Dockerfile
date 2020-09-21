@@ -6,9 +6,9 @@ ARG MS_VERSION=dev
 
 RUN mkdir -p /opt/apps
 
-ADD target/node-controller-1.1.jar /opt/apps
+ADD target/node-controller-1.3.jar /opt/apps
 
-ENV JAVA_APP_JAR=/opt/apps/node-controller-1.1.jar
+ENV JAVA_APP_JAR=/opt/apps/node-controller-1.3.jar
 
 ENV AB_OFF=true
 
