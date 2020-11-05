@@ -59,6 +59,15 @@ public class JmeterOperateService {
             }
         }
 
+        // 保存 byte[] jar
+        Map<String, byte[]> jarFiles = testRequest.getTestJars();
+        if (!CollectionUtils.isEmpty(jarFiles)) {
+            for (String k : jarFiles.keySet()) {
+                byte[] v = jarFiles.get(k);
+                FileUtils.writeByteArrayToFile(new File(filePath + File.separator + k), v);
+            }
+        }
+
         // 查找镜像
         searchImage(dockerClient, testRequest.getImage());
         // 检查容器是否存在
