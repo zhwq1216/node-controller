@@ -12,14 +12,13 @@ import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.util.DockerClientService;
 import io.metersphere.node.util.LogUtil;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +33,7 @@ import java.util.stream.Collectors;
 public class JmeterOperateService {
     @Resource
     private JmeterProperties jmeterProperties;
+    private static final String rootPath = StringUtils.join(new String[]{"", "opt", "node-data"}, File.separator);
 
     public void startContainer(TestRequest testRequest) throws IOException {
         String bootstrapServers = testRequest.getEnv().get("BOOTSTRAP_SERVERS");
@@ -44,7 +44,7 @@ public class JmeterOperateService {
         String testId = testRequest.getTestId();
 
         String containerImage = testRequest.getImage();
-        String filePath = StringUtils.join(new String[]{"", "opt", "node-data", testId}, File.separator);
+        String filePath = StringUtils.join(new String[]{rootPath, testId}, File.separator);
         String fileName = testId + ".jmx";
 
 
@@ -96,13 +96,19 @@ public class JmeterOperateService {
                     public void onComplete() {
                         // 清理文件夹
                         try {
+                            String jtlFileName = testRequest.getReportId() + ".jtl";
+                            InputStream input = dockerClient
+                                    .copyArchiveFromContainerCmd(containerId, "/test/" + jtlFileName)
+                                    .exec();
+
+                            IOUtils.copyLarge(input, new FileOutputStream(rootPath + File.separator + jtlFileName));
                             FileUtils.forceDelete(new File(filePath));
                             LogUtil.info("Remove dir completed.");
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
                             LogUtil.info("Remove container completed: " + containerId);
-                        } catch (IOException e) {
+                        } catch (Exception e) {
                             LogUtil.error("Remove dir error: ", e);
                         }
                         LogUtil.info("completed....");
@@ -243,5 +249,26 @@ public class JmeterOperateService {
             }
         }
         return sb.toString();
+    }
+
+    public byte[] downloadJtl(String reportId) {
+        try {
+            String jtlFileName = reportId + ".jtl";
+            return IOUtils.toByteArray(new FileInputStream(rootPath + File.separator + jtlFileName));
+        } catch (IOException e) {
+            LogUtil.error(e);
+        }
+        return new byte[0];
+    }
+
+    public boolean deleteJtl(String reportId) {
+        String jtlFileName = reportId + ".jtl";
+        try {
+            FileUtils.forceDelete(new File(rootPath + File.separator + jtlFileName));
+            return true;
+        } catch (IOException e) {
+            LogUtil.error(e);
+        }
+        return false;
     }
 }

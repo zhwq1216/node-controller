@@ -4,6 +4,9 @@ package io.metersphere.node.controller;
 import com.github.dockerjava.api.model.Container;
 import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.service.JmeterOperateService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -32,6 +35,20 @@ public class JmeterOperateController {
     public String stopContainer(@PathVariable String testId) {
         jmeterOperateService.stopContainer(testId);
         return "OK";
+    }
+
+    @GetMapping("download/jtl/{reportId}")
+    public ResponseEntity<byte[]> downloadJtl(@PathVariable String reportId) {
+        byte[] bytes = jmeterOperateService.downloadJtl(reportId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/octet-stream"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + reportId + ".jtl" + "\"")
+                .body(bytes);
+    }
+
+    @GetMapping("delete/jtl/{reportId}")
+    public boolean deleteJtl(@PathVariable String reportId) {
+        return jmeterOperateService.deleteJtl(reportId);
     }
 
     /**
