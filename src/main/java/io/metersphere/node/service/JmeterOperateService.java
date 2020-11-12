@@ -2,10 +2,7 @@ package io.metersphere.node.service;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
-import com.github.dockerjava.api.model.Container;
-import com.github.dockerjava.api.model.Frame;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.Image;
+import com.github.dockerjava.api.model.*;
 import com.github.dockerjava.core.InvocationBuilder;
 import io.metersphere.node.config.JmeterProperties;
 import io.metersphere.node.controller.request.TestRequest;
@@ -18,14 +15,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -77,16 +74,18 @@ public class JmeterOperateService {
     }
 
     private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage, String filePath) {
+        List<Volume> volumes = new ArrayList<>();
+        List<Bind> binds = new ArrayList<>();
+        final Volume volume = new Volume("/test");
+        volumes.add(volume);
+        final Bind bind = new Bind(filePath, volume);
+        binds.add(bind);
         // 创建 hostConfig
         HostConfig hostConfig = HostConfig.newHostConfig();
+        hostConfig.withBinds(binds);
+
         String[] envs = getEnvs(testRequest);
-        String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, envs).getId();
-        //  从主机复制文件到容器
-        dockerClient.copyArchiveToContainerCmd(containerId)
-                .withHostResource(filePath)
-                .withDirChildrenOnly(true)
-                .withRemotePath("/test")
-                .exec();
+        String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, volumes, envs).getId();
 
         DockerClientService.startContainer(dockerClient, containerId);
         LogUtil.info("Container create started containerId: " + containerId);
@@ -97,11 +96,11 @@ public class JmeterOperateService {
                         // 清理文件夹
                         try {
                             String jtlFileName = testRequest.getReportId() + ".jtl";
-                            InputStream input = dockerClient
-                                    .copyArchiveFromContainerCmd(containerId, "/test/" + jtlFileName)
-                                    .exec();
 
-                            IOUtils.copyLarge(input, new FileOutputStream(rootPath + File.separator + jtlFileName));
+                            File srcFile = new File(filePath + File.separator + jtlFileName);
+                            File destDir = new File(rootPath + File.separator + jtlFileName);
+
+                            FileUtils.copyFile(srcFile, destDir);
                             FileUtils.forceDelete(new File(filePath));
                             LogUtil.info("Remove dir completed.");
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
