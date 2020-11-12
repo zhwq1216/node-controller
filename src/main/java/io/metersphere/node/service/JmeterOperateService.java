@@ -85,7 +85,7 @@ public class JmeterOperateService {
         hostConfig.withBinds(binds);
 
         String[] envs = getEnvs(testRequest);
-        String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, volumes, envs).getId();
+        String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, envs).getId();
 
         DockerClientService.startContainer(dockerClient, containerId);
         LogUtil.info("Container create started containerId: " + containerId);

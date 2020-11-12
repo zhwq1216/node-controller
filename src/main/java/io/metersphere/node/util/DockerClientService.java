@@ -4,7 +4,6 @@ import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.node.controller.request.DockerLoginRequest;
@@ -43,12 +42,11 @@ public class DockerClientService {
      * @return
      */
     public static CreateContainerResponse createContainers(DockerClient client, String containerName, String imageName,
-                                                           HostConfig hostConfig, List<Volume> volumes, String... env) {
+                                                           HostConfig hostConfig, String... env) {
         CreateContainerResponse container = client.createContainerCmd(imageName)
                 .withName(containerName)
                 .withHostConfig(hostConfig)
                 .withEnv(env)
-                .withVolumes(volumes)
                 .exec();
         return container;
     }
