@@ -100,12 +100,6 @@ public class JmeterOperateService {
                     public void onComplete() {
                         // 清理文件夹
                         try {
-                            String jtlFileName = testRequest.getReportId() + ".jtl";
-
-                            File srcFile = new File(filePath + File.separator + jtlFileName);
-                            File destDir = new File(ROOT_PATH + File.separator + jtlFileName);
-
-                            FileUtils.copyFile(srcFile, destDir);
                             FileUtils.forceDelete(new File(filePath));
                             LogUtil.info("Remove dir completed.");
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
