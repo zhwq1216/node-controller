@@ -54,5 +54,5 @@ jobs:
         username: metersphere
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
         repository: metersphere/node-controller
-        tag_with_ref: true
+        tags: ${{ env.GITHUB_REF_SLUG }}
         build_args: MS_VERSION=${{ env.GITHUB_REF_SLUG }}-${{ env.GITHUB_SHA_SHORT }}
