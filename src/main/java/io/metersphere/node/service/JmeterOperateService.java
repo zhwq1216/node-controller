@@ -2,26 +2,23 @@ package io.metersphere.node.service;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
-import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.Frame;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.InvocationBuilder;
 import io.metersphere.node.config.JmeterProperties;
 import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.util.DockerClientService;
 import io.metersphere.node.util.LogUtil;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,61 +30,28 @@ import java.util.stream.Collectors;
 public class JmeterOperateService {
     @Resource
     private JmeterProperties jmeterProperties;
-    private static String ROOT_PATH;
 
-    static {
-        ROOT_PATH = System.getenv("JMETER_DATA_PATH");
-        LogUtil.info("JMETER_DATA_PATH: " + ROOT_PATH);
-        if (StringUtils.isBlank(ROOT_PATH)) {
-            ROOT_PATH = "/opt/metersphere/data/jmeter/";
-        }
-    }
-
-    public void startContainer(TestRequest testRequest) throws IOException {
-        String bootstrapServers = testRequest.getEnv().get("BOOTSTRAP_SERVERS");
+    public void startContainer(TestRequest testRequest) {
+        Map<String, String> env = testRequest.getEnv();
+        String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
         checkKafka(bootstrapServers);
 
-        LogUtil.info("Receive start container request, test id: {}", testRequest.getTestId());
+        LogUtil.info("Receive start container request, test id: {}", env.get("TEST_ID"));
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
-        String testId = testRequest.getTestId();
 
         String containerImage = testRequest.getImage();
-        String filePath = StringUtils.join(new String[]{ROOT_PATH, testId}, File.separator);
-        String fileName = testId + ".jmx";
-
-
-        //  每个测试生成一个文件夹
-        FileUtils.writeStringToFile(new File(filePath + File.separator + fileName), testRequest.getFileString(), StandardCharsets.UTF_8);
-        // 保存测试数据文件
-        Map<String, String> testData = testRequest.getTestData();
-        if (!CollectionUtils.isEmpty(testData)) {
-            for (String k : testData.keySet()) {
-                String v = testData.get(k);
-                FileUtils.writeStringToFile(new File(filePath + File.separator + k), v, StandardCharsets.UTF_8);
-            }
-        }
-
-        // 保存 byte[] jar
-        Map<String, byte[]> jarFiles = testRequest.getTestJars();
-        if (!CollectionUtils.isEmpty(jarFiles)) {
-            for (String k : jarFiles.keySet()) {
-                byte[] v = jarFiles.get(k);
-                FileUtils.writeByteArrayToFile(new File(filePath + File.separator + k), v);
-            }
-        }
 
         // 查找镜像
         searchImage(dockerClient, testRequest.getImage());
         // 检查容器是否存在
-        checkContainerExists(dockerClient, testId);
+        checkContainerExists(dockerClient, env.get("TEST_ID"));
         // 启动测试
-        startContainer(testRequest, dockerClient, testId, containerImage, filePath);
+        startContainer(testRequest, dockerClient, env.get("TEST_ID"), containerImage);
     }
 
-    private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage, String filePath) {
+    private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage) {
         // 创建 hostConfig
         HostConfig hostConfig = HostConfig.newHostConfig();
-        hostConfig.withBinds(Bind.parse(filePath + ":/test"));
 
         String[] envs = getEnvs(testRequest);
         String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, envs).getId();
@@ -100,14 +64,12 @@ public class JmeterOperateService {
                     public void onComplete() {
                         // 清理文件夹
                         try {
-                            FileUtils.forceDelete(new File(filePath));
-                            LogUtil.info("Remove dir completed.");
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
                             LogUtil.info("Remove container completed: " + containerId);
                         } catch (Exception e) {
-                            LogUtil.error("Remove dir error: ", e);
+                            LogUtil.error("Remove container error: ", e);
                         }
                         LogUtil.info("completed....");
                     }
@@ -247,26 +209,5 @@ public class JmeterOperateService {
             }
         }
         return sb.toString();
-    }
-
-    public byte[] downloadJtl(String reportId) {
-        try {
-            String jtlFileName = reportId + ".jtl";
-            return IOUtils.toByteArray(new FileInputStream(ROOT_PATH + File.separator + jtlFileName));
-        } catch (IOException e) {
-            LogUtil.error(e);
-        }
-        return new byte[0];
-    }
-
-    public boolean deleteJtl(String reportId) {
-        String jtlFileName = reportId + ".jtl";
-        try {
-            FileUtils.forceDelete(new File(ROOT_PATH + File.separator + jtlFileName));
-            return true;
-        } catch (IOException e) {
-            LogUtil.error(e);
-        }
-        return false;
     }
 }
