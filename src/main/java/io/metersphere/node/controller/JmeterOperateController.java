@@ -4,13 +4,9 @@ package io.metersphere.node.controller;
 import com.github.dockerjava.api.model.Container;
 import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.service.JmeterOperateService;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -23,7 +19,7 @@ public class JmeterOperateController {
      * 初始化测试任务，根据需求启动若干个 JMeter Engine 容器
      */
     @PostMapping("/container/start")
-    public String startContainer(@RequestBody TestRequest testRequest) throws IOException {
+    public String startContainer(@RequestBody TestRequest testRequest) {
         jmeterOperateService.startContainer(testRequest);
         return "OK";
     }
@@ -35,20 +31,6 @@ public class JmeterOperateController {
     public String stopContainer(@PathVariable String testId) {
         jmeterOperateService.stopContainer(testId);
         return "OK";
-    }
-
-    @GetMapping("download/jtl/{reportId}")
-    public ResponseEntity<byte[]> downloadJtl(@PathVariable String reportId) {
-        byte[] bytes = jmeterOperateService.downloadJtl(reportId);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/octet-stream"))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + reportId + ".jtl" + "\"")
-                .body(bytes);
-    }
-
-    @GetMapping("delete/jtl/{reportId}")
-    public boolean deleteJtl(@PathVariable String reportId) {
-        return jmeterOperateService.deleteJtl(reportId);
     }
 
     /**
