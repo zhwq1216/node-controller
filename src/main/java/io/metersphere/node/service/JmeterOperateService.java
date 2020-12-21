@@ -125,8 +125,6 @@ public class JmeterOperateService {
 
     private String[] getEnvs(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
-        // HEAP
-        env.put("HEAP", jmeterProperties.getHeap());
         return env.keySet().stream().map(k -> k + "=" + env.get(k)).toArray(String[]::new);
     }
 
