@@ -7,7 +7,6 @@ import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.InvocationBuilder;
-import io.metersphere.node.config.JmeterProperties;
 import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.util.DockerClientService;
 import io.metersphere.node.util.LogUtil;
@@ -15,7 +14,6 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.Resource;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -28,15 +26,15 @@ import java.util.stream.Collectors;
 
 @Service
 public class JmeterOperateService {
-    @Resource
-    private JmeterProperties jmeterProperties;
 
     public void startContainer(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
+        String testId = env.get("TEST_ID");
+        LogUtil.info("Receive start container request, test id: {}", testId);
         String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
+        // 检查kafka连通性
         checkKafka(bootstrapServers);
 
-        LogUtil.info("Receive start container request, test id: {}", env.get("TEST_ID"));
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
 
         String containerImage = testRequest.getImage();
@@ -44,9 +42,9 @@ public class JmeterOperateService {
         // 查找镜像
         searchImage(dockerClient, testRequest.getImage());
         // 检查容器是否存在
-        checkContainerExists(dockerClient, env.get("TEST_ID"));
+        checkContainerExists(dockerClient, testId);
         // 启动测试
-        startContainer(testRequest, dockerClient, env.get("TEST_ID"), containerImage);
+        startContainer(testRequest, dockerClient, testId, containerImage);
     }
 
     private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage) {
