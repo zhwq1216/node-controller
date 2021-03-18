@@ -50,7 +50,7 @@ public class JmeterOperateService {
     private void startContainer(TestRequest testRequest, DockerClient dockerClient, String testId, String containerImage) {
         // 创建 hostConfig
         HostConfig hostConfig = HostConfig.newHostConfig();
-
+        hostConfig.withNetworkMode("host");
         String[] envs = getEnvs(testRequest);
         String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, envs).getId();
 
