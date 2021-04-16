@@ -4,9 +4,11 @@ MAINTAINER FIT2CLOUD <support@fit2cloud.com>
 
 ARG MS_VERSION=dev
 
-RUN mkdir -p /opt/apps
+RUN mkdir -p /opt/apps && mkdir -p /opt/jmeter/lib/junit
 
 ADD target/node-controller-1.8.jar /opt/apps
+
+COPY target/classes/jmeter/ /opt/jmeter/
 
 ENV JAVA_APP_JAR=/opt/apps/node-controller-1.8.jar
 
