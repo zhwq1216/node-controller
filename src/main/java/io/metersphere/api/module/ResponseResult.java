@@ -1,4 +1,4 @@
-package io.metersphere.api.jmeter.module;
+package io.metersphere.api.module;
 
 import lombok.Data;
 

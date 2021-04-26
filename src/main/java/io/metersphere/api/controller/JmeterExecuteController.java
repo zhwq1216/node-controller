@@ -2,7 +2,9 @@ package io.metersphere.api.controller;
 
 import com.alibaba.fastjson.JSON;
 import io.metersphere.api.controller.request.RunRequest;
+import io.metersphere.api.module.JvmInfo;
 import io.metersphere.api.service.JmeterExecuteService;
+import io.metersphere.api.service.JvmService;
 import io.metersphere.node.util.LogUtil;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +28,12 @@ public class JmeterExecuteController {
     @GetMapping("/status")
     public String getStatus() {
         return "OK";
+    }
+
+
+    @GetMapping("/getJvmInfo")
+    public JvmInfo getJvmInfo() {
+        return JvmService.jvmInfo();
     }
 
 }

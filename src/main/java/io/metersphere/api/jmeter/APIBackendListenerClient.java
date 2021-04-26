@@ -4,7 +4,7 @@ import com.alibaba.fastjson.JSON;
 import io.metersphere.api.service.LoadTestProducer;
 import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.constants.RequestType;
-import io.metersphere.api.jmeter.module.*;
+import io.metersphere.api.module.*;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.node.util.LogUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -28,7 +28,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     public final static String TEST_ID = "ms.test.id";
 
-    public final static String TEST_REPORT_NAME = "ms.test.report.name";
+    public final static String TEST_REPORT_ID = "ms.test.report.name";
 
     private final static String THREAD_SPLIT = " ";
 
@@ -52,7 +52,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
     /**
      * 只有合并报告是这个有值
      */
-    private String reportName;
+    private String setReportId;
 
     /**
      * 获得控制台内容
@@ -88,7 +88,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         TestResult testResult = new TestResult();
         testResult.setTestId(testId);
         testResult.setTotal(queue.size());
-        testResult.setReportName(this.reportName);
+        testResult.setSetReportId(this.setReportId);
         testResult.setDebug(this.isDebug);
         testResult.setUserId(this.userId);
         loadTestProducer = CommonBeanFactory.getBean(LoadTestProducer.class);
@@ -224,7 +224,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     private void setParam(BackendListenerContext context) {
         this.testId = context.getParameter(TEST_ID);
-        this.reportName = context.getParameter(TEST_REPORT_NAME);
+        this.setReportId = context.getParameter(TEST_REPORT_ID);
         this.runMode = context.getParameter("runMode");
         this.isDebug = StringUtils.equals(context.getParameter("DEBUG"), "DEBUG") ? true : false;
         this.userId = context.getParameter("USER_ID");

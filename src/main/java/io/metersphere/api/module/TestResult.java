@@ -1,8 +1,8 @@
-package io.metersphere.api.jmeter.module;
+package io.metersphere.api.module;
 
 import lombok.Data;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.dubbo.common.utils.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,13 +12,13 @@ public class TestResult {
 
     private String testId;
 
-    private boolean isDebug;
+    private String setReportId;
 
     private String userId;
 
-    private String runMode;
+    private boolean isDebug;
 
-    private String reportName;
+    private String runMode;
 
     private int success = 0;
 
