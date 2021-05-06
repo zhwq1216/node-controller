@@ -163,11 +163,26 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
         }
     }
 
+
+    /**
+     * 定制自定义添加 =================
+     */
     private String samplerId;
 
     public String getSamplerId() {
         return this.samplerId;
     }
+
+    // 数据格式 List<id_name> 多层父级按照同级统计
+    private String scenario;
+
+    public String getScenario() {
+        return this.scenario;
+    }
+
+    /**
+     * 定制自定义添加 =================
+     */
 
     private SampleSaveConfiguration saveConfig;
 
@@ -335,6 +350,7 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
         Sampler sampler = JMeterContextService.getContext().getCurrentSampler();
         if (sampler != null) {
             this.samplerId = sampler.getPropertyAsString("MS-ID");
+            this.scenario = sampler.getPropertyAsString("MS-SCENARIO");
         }
 
     }

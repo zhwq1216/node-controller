@@ -14,6 +14,12 @@ public class TestResult {
 
     private String setReportId;
 
+    private int scenarioTotal;
+
+    private int scenarioSuccess;
+
+    private int scenarioError;
+
     private String userId;
 
     private boolean isDebug;
@@ -50,18 +56,4 @@ public class TestResult {
 
     private static final String SEPARATOR = "<->";
 
-    public void addScenario(ScenarioResult result) {
-        if (result != null && CollectionUtils.isNotEmpty(result.getRequestResults())) {
-            result.getRequestResults().forEach(item -> {
-                if (StringUtils.isNotEmpty(item.getName()) && item.getName().indexOf(SEPARATOR) != -1) {
-                    String array[] = item.getName().split(SEPARATOR);
-                    item.setName(array[1] + array[0]);
-                    item.getSubRequestResults().forEach(subItem -> {
-                        subItem.setName(array[0]);
-                    });
-                }
-            });
-            scenarios.add(result);
-        }
-    }
 }
