@@ -14,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class JmeterOperateService {
+    @Resource
+    private KafkaProducer kafkaProducer;
 
     public void startContainer(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
@@ -65,6 +68,12 @@ public class JmeterOperateService {
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
+                            // 上传结束消息，取保正常结束
+                            String topic = testRequest.getEnv().getOrDefault("LOG_TOPIC", "JMETER_LOGS");
+                            String reportId = testRequest.getEnv().get("REPORT_ID");
+                            String[] contents = new String[]{reportId, "none", "0", "Notifying test listeners of end of test"};
+                            String log = StringUtils.join(contents, " ");
+                            kafkaProducer.sendMessage(topic, log);
                             LogUtil.info("Remove container completed: " + containerId);
                         } catch (Exception e) {
                             LogUtil.error("Remove container error: ", e);
