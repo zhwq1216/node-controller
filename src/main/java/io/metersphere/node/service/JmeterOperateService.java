@@ -71,7 +71,7 @@ public class JmeterOperateService {
                             // 上传结束消息，取保正常结束
                             String topic = testRequest.getEnv().getOrDefault("LOG_TOPIC", "JMETER_LOGS");
                             String reportId = testRequest.getEnv().get("REPORT_ID");
-                            String[] contents = new String[]{reportId, "none", "0", "Notifying test listeners of end of test"};
+                            String[] contents = new String[]{reportId, "none", "0", "Remove container completed"};
                             String log = StringUtils.join(contents, " ");
                             kafkaProducer.sendMessage(topic, log);
                             LogUtil.info("Remove container completed: " + containerId);
