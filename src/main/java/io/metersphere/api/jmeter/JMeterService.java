@@ -72,7 +72,7 @@ public class JMeterService {
         testPlan.add(testPlan.getArray()[0], backendListener);
     }
 
-    public void runSerial(RunRequest request, HashTree testPlan) {
+    public void run(RunRequest request, HashTree testPlan) {
         try {
             init();
             addBackendListener(testPlan, request);

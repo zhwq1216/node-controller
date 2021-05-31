@@ -10,7 +10,7 @@ public class FileUtils {
     public static final String BODY_FILE_DIR = "/opt/metersphere/data/body";
     public static final String JAR_FILE_DIR = "/opt/metersphere/data/node/jar";
 
-    public static void createBodyFiles(MultipartFile[] bodyFiles,String path) {
+    public static void createFiles(MultipartFile[] bodyFiles, String path) {
         if (bodyFiles != null && bodyFiles.length > 0) {
             File testDir = new File(path);
             if (!testDir.exists()) {

@@ -54,8 +54,8 @@ public class JmeterExecuteService {
         // 检查KAFKA
         loadTestProducer.checkKafka();
         // 生成附件/JAR文件
-        FileUtils.createBodyFiles(bodyFiles, FileUtils.BODY_FILE_DIR);
-        FileUtils.createBodyFiles(jarFiles, FileUtils.JAR_FILE_DIR);
+        FileUtils.createFiles(bodyFiles, FileUtils.BODY_FILE_DIR);
+        FileUtils.createFiles(jarFiles, FileUtils.JAR_FILE_DIR);
         try {
             this.loadJar(FileUtils.JAR_FILE_DIR);
             // 生成执行脚本
@@ -63,7 +63,7 @@ public class JmeterExecuteService {
             Object scriptWrapper = SaveService.loadElement(inputSource);
             HashTree testPlan = JMeterService.getHashTree(scriptWrapper);
             // 开始执行
-            jMeterService.runSerial(request, testPlan);
+            jMeterService.run(request, testPlan);
         } catch (Exception e) {
             LogUtil.error(e.getMessage());
             return e.getMessage();
