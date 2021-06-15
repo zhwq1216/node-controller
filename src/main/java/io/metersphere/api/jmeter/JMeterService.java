@@ -9,6 +9,7 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jmeter.visualizers.backend.BackendListener;
 import org.apache.jorphan.collections.HashTree;
+import org.python.antlr.ast.arguments;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -56,12 +57,20 @@ public class JMeterService {
 
     private void addBackendListener(HashTree testPlan, RunRequest request) {
         BackendListener backendListener = new BackendListener();
-        backendListener.setName(request.getTestId());
+        if (StringUtils.isNotEmpty(request.getReportId())) {
+            backendListener.setName(request.getReportId());
+        } else {
+            backendListener.setName(request.getTestId());
+        }
         Arguments arguments = new Arguments();
         if (request.getConfig() != null && request.getConfig().getMode().equals("serial") && request.getConfig().getReportType().equals("setReport")) {
             arguments.addArgument(APIBackendListenerClient.TEST_REPORT_ID, request.getConfig().getReportName());
         }
-        arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getTestId());
+        if (StringUtils.isNotEmpty(request.getReportId())) {
+            arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getReportId());
+        } else {
+            arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getTestId());
+        }
         if (StringUtils.isNotBlank(request.getRunMode())) {
             arguments.addArgument("runMode", request.getRunMode());
         }
