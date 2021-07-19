@@ -2,7 +2,6 @@ package io.metersphere.api.service;
 
 import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.JMeterService;
-import io.metersphere.api.jmeter.LocalRunner;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.node.util.LogUtil;
@@ -91,12 +90,16 @@ public class JmeterExecuteService {
             LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
 
             File bodyFile = ZipSpider.downloadFile(runRequest.getUrl(), FileUtils.BODY_FILE_DIR);
-            ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
-            File jmxFile = new File(FileUtils.BODY_FILE_DIR + "/" + runRequest.getTestId() + ".jmx");
-            // 生成执行脚本
-            HashTree testPlan = SaveService.loadTree(jmxFile);
-            // 开始执行
-            jMeterService.run(runRequest, testPlan);
+            if (bodyFile != null) {
+                ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
+                File jmxFile = new File(FileUtils.BODY_FILE_DIR + "/" + runRequest.getTestId() + ".jmx");
+                // 生成执行脚本
+                HashTree testPlan = SaveService.loadTree(jmxFile);
+                // 开始执行
+                jMeterService.run(runRequest, testPlan);
+            } else {
+                MSException.throwException("未找到执行的JMX文件");
+            }
         } catch (Exception e) {
             LogUtil.error(e.getMessage());
             return e.getMessage();

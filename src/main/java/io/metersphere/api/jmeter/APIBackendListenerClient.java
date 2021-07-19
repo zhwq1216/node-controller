@@ -149,6 +149,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
     private RequestResult getRequestResult(SampleResult result) {
         RequestResult requestResult = new RequestResult();
         requestResult.setId(result.getSamplerId());
+        requestResult.setResourceId(result.getResourceId());
         requestResult.setName(result.getSampleLabel());
         requestResult.setUrl(result.getUrlAsString());
         requestResult.setMethod(getMethod(result));
