@@ -10,6 +10,8 @@ public class RequestResult {
     // 请求ID
     private String id;
 
+    private String resourceId;
+
     private String name;
 
     private String url;

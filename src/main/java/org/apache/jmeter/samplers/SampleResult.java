@@ -97,7 +97,7 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
      * @see #getDataType
      * @see #setDataType(String)
      */
-    public static final String BINARY = "jmeter.bin"; // $NON-NLS-1$
+    public static final String BINARY = "bin"; // $NON-NLS-1$
 
     private static final boolean DISABLE_SUBRESULTS_RENAMING = JMeterUtils.getPropDefault("subresults.disable_renaming", false);
 
@@ -163,14 +163,19 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
         }
     }
 
-
     /**
      * 定制自定义添加 =================
      */
     private String samplerId;
 
+    private String resourceId;
+
     public String getSamplerId() {
         return this.samplerId;
+    }
+
+    public String getResourceId() {
+        return this.resourceId;
     }
 
     // 数据格式 List<id_name> 多层父级按照同级统计
@@ -183,7 +188,6 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
     /**
      * 定制自定义添加 =================
      */
-
     private SampleSaveConfiguration saveConfig;
 
     private SampleResult parent;
@@ -247,7 +251,7 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
 
     /**
      * Files that this sample has been saved in.
-     * In Non GUI mode and when best utils is used, size never exceeds 1,
+     * In Non GUI mode and when best config is used, size never exceeds 1,
      * but as a compromise set it to 2
      */
     private final Set<String> files = ConcurrentHashMap.newKeySet(2);
@@ -350,6 +354,7 @@ public class SampleResult implements Serializable, Cloneable, Searchable {
         Sampler sampler = JMeterContextService.getContext().getCurrentSampler();
         if (sampler != null) {
             this.samplerId = sampler.getPropertyAsString("MS-ID");
+            this.resourceId = sampler.getPropertyAsString("MS-RESOURCE-ID");
             this.scenario = sampler.getPropertyAsString("MS-SCENARIO");
         }
 
