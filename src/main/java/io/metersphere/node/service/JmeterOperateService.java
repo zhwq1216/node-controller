@@ -129,7 +129,7 @@ public class JmeterOperateService {
 
 
         InputStream jtlIn = dockerClient
-                .copyArchiveFromContainerCmd(containerId, "/jmeter-log/" + reportId + ".jtl")
+                .copyArchiveFromContainerCmd(containerId, "/jmeter-log/" + reportId + "_" + resourceIndex + ".jtl")
                 .exec();
         jtlIn.available();
         File jtl = new File(pathname + "/report.jtl.tar");
