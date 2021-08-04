@@ -8,13 +8,19 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.InvocationBuilder;
 import io.metersphere.node.controller.request.TestRequest;
+import io.metersphere.node.util.CompressUtils;
 import io.metersphere.node.util.DockerClientService;
 import io.metersphere.node.util.LogUtil;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
@@ -23,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class JmeterOperateService {
@@ -61,6 +68,7 @@ public class JmeterOperateService {
 
         String topic = testRequest.getEnv().getOrDefault("LOG_TOPIC", "JMETER_LOGS");
         String reportId = testRequest.getEnv().get("REPORT_ID");
+        String resourceIndex = testRequest.getEnv().get("RESOURCE_INDEX");
 
         dockerClient.waitContainerCmd(containerId)
                 .exec(new WaitContainerResultCallback() {
@@ -69,6 +77,9 @@ public class JmeterOperateService {
                         // 清理文件夹
                         try {
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
+
+                                copyTestResources(dockerClient, containerId, reportId, resourceIndex);
+
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
                             // 上传结束消息
@@ -102,6 +113,48 @@ public class JmeterOperateService {
                         LogUtil.info(log);
                     }
                 });
+    }
+
+    private void copyTestResources(DockerClient dockerClient, String containerId, String reportId, String resourceIndex) throws IOException {
+        InputStream testIn = dockerClient
+                .copyArchiveFromContainerCmd(containerId, "/test/")
+                .exec();
+        testIn.available();
+        String pathname = reportId + "_" + resourceIndex;
+        File dir = new File(pathname);
+
+        FileUtils.forceMkdir(dir);
+        File testDir = new File(pathname + "/test.tar");
+        FileUtils.copyInputStreamToFile(testIn, testDir);
+
+
+        InputStream jtlIn = dockerClient
+                .copyArchiveFromContainerCmd(containerId, "/jmeter-log/" + reportId + ".jtl")
+                .exec();
+        jtlIn.available();
+        File jtl = new File(pathname + "/report.jtl.tar");
+        FileUtils.copyInputStreamToFile(jtlIn, jtl);
+
+        InputStream logIn = dockerClient
+                .copyArchiveFromContainerCmd(containerId, "/jmeter-log/jmeter.log")
+                .exec();
+        logIn.available();
+        File log = new File(pathname + "/jmeter.log.tar");
+        FileUtils.copyInputStreamToFile(logIn, log);
+
+        InputStream generateLogIn = dockerClient
+                .copyArchiveFromContainerCmd(containerId, "/jmeter-log/generate-report.log")
+                .exec();
+        generateLogIn.available();
+        File generateLog = new File(pathname + "/generate-report.log.tar");
+        FileUtils.copyInputStreamToFile(generateLogIn, generateLog);
+
+        try (
+                ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(reportId + "_" + resourceIndex + ".zip"))
+        ) {
+            CompressUtils.zipDirectory(dir, zipOutputStream, "");
+            FileUtils.forceDelete(dir);
+        }
     }
 
     private void checkContainerExists(DockerClient dockerClient, String testId) {
