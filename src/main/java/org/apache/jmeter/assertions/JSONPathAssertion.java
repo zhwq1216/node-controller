@@ -5,10 +5,10 @@
 
 package org.apache.jmeter.assertions;
 
+import com.google.gson.Gson;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
 import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testelement.AbstractTestElement;
@@ -126,6 +126,12 @@ public class JSONPathAssertion extends AbstractTestElement implements Serializab
                         case "NOT_EQUALS":
                             msg = "Value not equals to be '%s', but found '%s'";
                             break;
+                        case "GT":
+                            msg = "Value > '%s', but found '%s'";
+                            break;
+                        case "LT":
+                            msg = "Value < '%s', but found '%s'";
+                            break;
                     }
                 } else {
                     msg = "Value expected to be '%s', but found '%s'";
@@ -153,6 +159,22 @@ public class JSONPathAssertion extends AbstractTestElement implements Serializab
         }
     }
 
+    private boolean isGt(String v1, String v2) {
+        try {
+            return Long.parseLong(v1) > Long.parseLong(v2);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isLt(String v1, String v2) {
+        try {
+            return Long.parseLong(v1) < Long.parseLong(v2);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private boolean isEquals(Object subj) {
         String str = objectToString(subj);
         if (this.isUseRegex()) {
@@ -174,6 +196,13 @@ public class JSONPathAssertion extends AbstractTestElement implements Serializab
                     case "NOT_EQUALS":
                         refFlag = !str.equals(getExpectedValue());
                         break;
+                    case "GT":
+                        refFlag = isGt(str, getExpectedValue());
+                        break;
+                    case "LT":
+                        refFlag = isLt(str, getExpectedValue());
+                        break;
+
                 }
                 return refFlag;
             }
@@ -224,7 +253,7 @@ public class JSONPathAssertion extends AbstractTestElement implements Serializab
         if (subj == null) {
             str = "null";
         } else if (subj instanceof Map) {
-            str = (new JSONObject((Map) subj)).toJSONString();
+            str = new Gson().toJson(subj);
         } else if (!(subj instanceof Double) && !(subj instanceof Float)) {
             str = subj.toString();
         } else {
