@@ -4,17 +4,18 @@ import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
+import io.metersphere.api.service.utils.ZipSpider;
 import io.metersphere.node.util.LogUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.NewDriver;
 import org.apache.jmeter.save.SaveService;
 import org.apache.jorphan.collections.HashTree;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -25,12 +26,29 @@ public class JmeterExecuteService {
     private JMeterService jMeterService;
     @Resource
     LoadTestProducer loadTestProducer;
+    @Resource
+    private RestTemplate restTemplate;
 
     private static InputStream getStrToStream(String sInputString) {
         if (StringUtils.isNotEmpty(sInputString)) {
             try {
                 ByteArrayInputStream tInputStringStream = new ByteArrayInputStream(sInputString.getBytes());
                 return tInputStringStream;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                MSException.throwException("生成脚本异常");
+            }
+        }
+        return null;
+    }
+
+    private HashTree getHashTree(byte[] hashTree) {
+        if (hashTree.length > 0) {
+            try {
+                ByteArrayInputStream tInputStringStream = new ByteArrayInputStream(hashTree);
+                Object scriptWrapper = SaveService.loadElement(tInputStringStream);
+                HashTree testPlan = JMeterService.getHashTree(scriptWrapper);
+                return testPlan;
             } catch (Exception ex) {
                 ex.printStackTrace();
                 MSException.throwException("生成脚本异常");
@@ -73,6 +91,40 @@ public class JmeterExecuteService {
         return "SUCCESS";
     }
 
+//    public String runStart(RunRequest runRequest) {
+//        // 检查KAFKA
+//        loadTestProducer.checkKafka();
+//        try {
+//            // 生成附件/JAR文件
+//            URL urlObject = new URL(runRequest.getUrl());
+//            String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
+//            LogUtil.info("开始同步上传的第三方JAR：" + jarUrl);
+//
+//            File file = ZipSpider.downloadFile(jarUrl, FileUtils.JAR_FILE_DIR);
+//            if (file != null) {
+//                ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
+//                this.loadJar(FileUtils.JAR_FILE_DIR);
+//            }
+//            LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
+//
+//            File bodyFile = ZipSpider.downloadFile(runRequest.getUrl(), FileUtils.BODY_FILE_DIR);
+//            if (bodyFile != null) {
+//                ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
+//                File jmxFile = new File(FileUtils.BODY_FILE_DIR + "/" + runRequest.getTestId() + ".jmx");
+//                // 生成执行脚本
+//                HashTree testPlan = SaveService.loadTree(jmxFile);
+//                // 开始执行
+//                jMeterService.run(runRequest, testPlan);
+//            } else {
+//                MSException.throwException("未找到执行的JMX文件");
+//            }
+//        } catch (Exception e) {
+//            LogUtil.error(e.getMessage());
+//            return e.getMessage();
+//        }
+//        return "SUCCESS";
+//    }
+
     public String runStart(RunRequest runRequest) {
         // 检查KAFKA
         loadTestProducer.checkKafka();
@@ -80,21 +132,13 @@ public class JmeterExecuteService {
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());
             String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
-            LogUtil.info("开始同步上传的第三方JAR：" + jarUrl);
-
-            File file = ZipSpider.downloadFile(jarUrl, FileUtils.JAR_FILE_DIR);
-            if (file != null) {
-                ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
-                this.loadJar(FileUtils.JAR_FILE_DIR);
-            }
             LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
-
-            File bodyFile = ZipSpider.downloadFile(runRequest.getUrl(), FileUtils.BODY_FILE_DIR);
-            if (bodyFile != null) {
-                ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
-                File jmxFile = new File(FileUtils.BODY_FILE_DIR + "/" + runRequest.getTestId() + ".jmx");
+            byte[] jmx = ZipSpider.get(runRequest.getUrl(), restTemplate);
+            if (jmx != null) {
                 // 生成执行脚本
-                HashTree testPlan = SaveService.loadTree(jmxFile);
+                HashTree testPlan = this.getHashTree(jmx);
+                //加载附件
+                ZipSpider.downloadFiles(runRequest.getUrl(), testPlan);
                 // 开始执行
                 jMeterService.run(runRequest, testPlan);
             } else {
@@ -106,5 +150,4 @@ public class JmeterExecuteService {
         }
         return "SUCCESS";
     }
-
 }

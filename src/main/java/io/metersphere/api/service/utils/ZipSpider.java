@@ -1,11 +1,25 @@
-package io.metersphere.api.service;
+package io.metersphere.api.service.utils;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.alibaba.fastjson.JSON;
+import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.node.util.LogUtil;
+import org.apache.dubbo.common.utils.CollectionUtils;
+import org.apache.jmeter.config.CSVDataSet;
+import org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy;
+import org.apache.jmeter.protocol.http.util.HTTPFileArg;
+import org.apache.jorphan.collections.HashTree;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 public class ZipSpider {
 
@@ -139,19 +153,35 @@ public class ZipSpider {
     }
 
     @SuppressWarnings("finally")
-    public static File downloadFile(String urlPath, String downloadDir) {
+    public static File downloadFile(String urlPath, String downloadDir,String json) {
         File file = null;
+        BufferedInputStream bin = null;
+        OutputStream out = null;
         try {
             URL url = new URL(urlPath);
             URLConnection urlConnection = url.openConnection();
             HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
             //String contentType = httpURLConnection.getContentType();//请求类型,可用来过滤请求，
+            httpURLConnection.setUseCaches(false);
+            httpURLConnection.setDoOutput(true);
+            httpURLConnection.setDoInput(true);
             httpURLConnection.setConnectTimeout(1000 * 5);//设置超时
-            httpURLConnection.setRequestMethod("GET");//设置请求方式，默认是GET
+            httpURLConnection.setRequestMethod("POST");//设置请求方式，默认是GET
             httpURLConnection.setRequestProperty("Charset", "UTF-8");// 设置字符编码
-            httpURLConnection.connect();// 打开连接
+            httpURLConnection.setRequestProperty("Connection", "Keep-Alive");
+            httpURLConnection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            httpURLConnection.setInstanceFollowRedirects(false);
+            byte[] writebytes = json.getBytes();
+            // 设置文件长度
+            httpURLConnection.setRequestProperty("Content-Length", String.valueOf(writebytes.length));
+            OutputStream outwritestream = httpURLConnection.getOutputStream();
+            outwritestream.write(json.getBytes());
+            outwritestream.flush();
+            outwritestream.close();
 
-            BufferedInputStream bin = new BufferedInputStream(httpURLConnection.getInputStream());
+            httpURLConnection.connect();// 打开连接
+            bin = new BufferedInputStream(httpURLConnection.getInputStream());
+
             String fileName = httpURLConnection.getHeaderField("Content-Disposition");
             fileName = URLDecoder.decode(fileName.substring(fileName.indexOf("filename") + 10, fileName.length() - 1), "UTF-8");
             String path = downloadDir + File.separatorChar + fileName;// 指定存放位置
@@ -161,7 +191,7 @@ public class ZipSpider {
                 file.getParentFile().mkdirs();
             }
 
-            OutputStream out = new FileOutputStream(file);
+            out = new FileOutputStream(file);
             int size = 0;
 
             byte[] b = new byte[2048];
@@ -181,7 +211,67 @@ public class ZipSpider {
             e.printStackTrace();
             LogUtil.info("文件下载失败！");
         } finally {
+            try {
+                bin.close();
+                out.close();
+            } catch (Exception e) {
+
+            }
             return file;
         }
+    }
+
+    public static void getFiles(HashTree tree, List<BodyFile> files) {
+        for (Object key : tree.keySet()) {
+            HashTree node = tree.get(key);
+            if (key instanceof HTTPSamplerProxy) {
+                HTTPSamplerProxy source = (HTTPSamplerProxy) key;
+                if (source != null && source.getHTTPFiles().length > 0) {
+                    for (HTTPFileArg arg : source.getHTTPFiles()) {
+                        BodyFile file = new BodyFile();
+                        file.setId(arg.getParamName());
+                        file.setName(arg.getPath());
+                        files.add(file);
+                    }
+                }
+            } else if (key instanceof CSVDataSet) {
+                CSVDataSet source = (CSVDataSet) key;
+                if (source != null && source.getFilename() != null) {
+                    BodyFile file = new BodyFile();
+                    file.setId(source.getFilename());
+                    file.setName(source.getFilename());
+                    files.add(file);
+                }
+            }
+            if (node != null) {
+                getFiles(node, files);
+            }
+        }
+    }
+
+    public static void downloadFiles(String uri, HashTree hashTree) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN));
+        List<BodyFile> files = new ArrayList<>();
+        ZipSpider.getFiles(hashTree, files);
+        if (CollectionUtils.isNotEmpty(files)) {
+            try {
+                URL urlObject = new URL(uri);
+                String url = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/files";
+                LogUtil.info("开始同步下载附件：" + url);
+                ZipSpider.downloadFile(url, FileUtils.BODY_FILE_DIR, JSON.toJSONString(files));
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static byte[] get(String uri, RestTemplate restTemplate) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN));
+        ResponseEntity<byte[]> result = restTemplate.getForEntity(uri, byte[].class);
+        return result.getBody();
     }
 }
