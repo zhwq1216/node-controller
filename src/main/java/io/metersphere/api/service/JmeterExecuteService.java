@@ -111,5 +111,6 @@ public class JmeterExecuteService {
 
     public void sendMessage(String message) {
         kafkaTemplate.send(MsKafkaListener.TOPICS, message);
+        kafkaTemplate.flush();
     }
 }
