@@ -1,11 +1,11 @@
 package io.metersphere.api.jmeter;
 
 import com.alibaba.fastjson.JSON;
-import io.metersphere.api.service.LoadTestProducer;
 import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.constants.RequestType;
 import io.metersphere.api.module.*;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
+import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.node.util.LogUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.common.utils.CollectionUtils;
@@ -42,7 +42,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     private boolean isDebug;
 
-    private LoadTestProducer loadTestProducer;
+    private JmeterExecuteService jmeterExecuteService;
 
     /**
      * 测试ID
@@ -91,7 +91,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.setSetReportId(this.setReportId);
         testResult.setDebug(this.isDebug);
         testResult.setUserId(this.userId);
-        loadTestProducer = CommonBeanFactory.getBean(LoadTestProducer.class);
+        jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
         // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id
         final Map<String, ScenarioResult> scenarios = new LinkedHashMap<>();
         queue.forEach(result -> {
@@ -141,7 +141,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.getScenarios().sort(Comparator.comparing(ScenarioResult::getId));
         testResult.setRunMode(this.runMode);
         // 推送执行结果
-        loadTestProducer.sendMessage(JSON.toJSONString(testResult));
+        jmeterExecuteService.sendMessage(JSON.toJSONString(testResult));
         queue.clear();
         super.teardownTest(context);
     }
