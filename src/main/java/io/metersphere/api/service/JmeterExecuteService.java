@@ -1,5 +1,6 @@
 package io.metersphere.api.service;
 
+import io.metersphere.api.config.FixedTask;
 import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.FileUtils;
@@ -16,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -126,13 +128,21 @@ public class JmeterExecuteService {
 //    }
 
     public String runStart(RunRequest runRequest) {
-        // 检查KAFKA
-        loadTestProducer.checkKafka();
         try {
+            LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
+            // 检查KAFKA
+            loadTestProducer.checkKafka();
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());
             String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
-            LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
+            if (StringUtils.isEmpty(FixedTask.url)) {
+                File file = ZipSpider.downloadFile(FixedTask.url, FileUtils.JAR_FILE_DIR);
+                if (file != null) {
+                    ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
+                    this.loadJar(FileUtils.JAR_FILE_DIR);
+                }
+            }
+            FixedTask.url = jarUrl;
             byte[] jmx = ZipSpider.get(runRequest.getUrl(), restTemplate);
             if (jmx != null) {
                 // 生成执行脚本
