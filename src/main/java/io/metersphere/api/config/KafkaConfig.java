@@ -14,4 +14,12 @@ public class KafkaConfig {
         return TopicBuilder.name(testTopic)
                 .build();
     }
+
+    public final static String execTopic = "ms-automation-exec-topic";
+
+    @Bean
+    public NewTopic automationTopic() {
+        return TopicBuilder.name(execTopic)
+                .build();
+    }
 }

@@ -272,8 +272,10 @@ public abstract class JSR223TestElement extends ScriptingTestElement
                     groovyScriptEngine.getClassLoader().addURL(file.toURI().toURL());
                 } else {
                     File[] files = file.listFiles();
-                    for (File f : files) {
-                        groovyScriptEngine.getClassLoader().addURL(f.toURI().toURL());
+                    if(files!= null && files.length > 0){
+                        for (File f : files) {
+                            groovyScriptEngine.getClassLoader().addURL(f.toURI().toURL());
+                        }
                     }
                 }
             } catch (Exception e) {
