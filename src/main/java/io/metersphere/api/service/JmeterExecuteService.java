@@ -136,6 +136,7 @@ public class JmeterExecuteService {
             URL urlObject = new URL(runRequest.getUrl());
             String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
             if (StringUtils.isEmpty(FixedTask.url)) {
+                FixedTask.url = jarUrl;
                 File file = ZipSpider.downloadFile(FixedTask.url, FileUtils.JAR_FILE_DIR);
                 if (file != null) {
                     ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
