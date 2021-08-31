@@ -94,22 +94,25 @@ public class ZipSpider {
     public static void unzip(String fromFile, String toFile) {
         try (ZipInputStream zin = new ZipInputStream(new FileInputStream(fromFile)); BufferedInputStream bin = new BufferedInputStream(zin);) {
             String Parent = toFile;
-            File fout = null;
             ZipEntry entry;
             while ((entry = zin.getNextEntry()) != null && !entry.isDirectory()) {
-                fout = new File(Parent, entry.getName());
+                File fout = new File(Parent, entry.getName());
                 if (!fout.exists()) {
                     (new File(fout.getParent())).mkdirs();
                 }
-                FileOutputStream out = new FileOutputStream(fout);
-                BufferedOutputStream Bout = new BufferedOutputStream(out);
-                int b;
-                while ((b = bin.read()) != -1) {
-                    Bout.write(b);
+                try (FileOutputStream out = new FileOutputStream(fout);
+                     BufferedOutputStream bout = new BufferedOutputStream(out);) {
+                    int b;
+                    while ((b = bin.read()) != -1) {
+                        bout.write(b);
+                    }
+                    bout.close();
+                    out.close();
+                    LogUtil.info(fout + "解压成功");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-                Bout.close();
-                out.close();
-                LogUtil.info(fout + "解压成功");
+
             }
             bin.close();
             zin.close();
@@ -148,75 +151,6 @@ public class ZipSpider {
         sop("");
     }
 
-    @SuppressWarnings("finally")
-    public static File downloadFile(String urlPath, String downloadDir, String json) {
-        File file = null;
-        BufferedInputStream bin = null;
-        OutputStream out = null;
-        try {
-            URL url = new URL(urlPath);
-            URLConnection urlConnection = url.openConnection();
-            HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
-            //String contentType = httpURLConnection.getContentType();//请求类型,可用来过滤请求，
-            httpURLConnection.setUseCaches(false);
-            httpURLConnection.setDoOutput(true);
-            httpURLConnection.setDoInput(true);
-            httpURLConnection.setConnectTimeout(1000 * 5);//设置超时
-            httpURLConnection.setRequestMethod("POST");//设置请求方式，默认是GET
-            httpURLConnection.setRequestProperty("Charset", "UTF-8");// 设置字符编码
-            httpURLConnection.setRequestProperty("Connection", "Keep-Alive");
-            httpURLConnection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            httpURLConnection.setInstanceFollowRedirects(false);
-            byte[] writebytes = json.getBytes();
-            // 设置文件长度
-            httpURLConnection.setRequestProperty("Content-Length", String.valueOf(writebytes.length));
-            OutputStream outwritestream = httpURLConnection.getOutputStream();
-            outwritestream.write(json.getBytes());
-            outwritestream.flush();
-            outwritestream.close();
-
-            httpURLConnection.connect();// 打开连接
-            bin = new BufferedInputStream(httpURLConnection.getInputStream());
-
-            String fileName = httpURLConnection.getHeaderField("Content-Disposition");
-            fileName = URLDecoder.decode(fileName.substring(fileName.indexOf("filename") + 10, fileName.length() - 1), "UTF-8");
-            String path = downloadDir + File.separatorChar + fileName;// 指定存放位置
-            file = new File(path);
-            // 校验文件夹目录是否存在，不存在就创建一个目录
-            if (!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs();
-            }
-
-            out = new FileOutputStream(file);
-            int size = 0;
-
-            byte[] b = new byte[2048];
-            //把输入流的文件读取到字节数据b中，然后输出到指定目录的文件
-            while ((size = bin.read(b)) != -1) {
-                out.write(b, 0, size);
-            }
-            // 关闭资源
-            bin.close();
-            out.close();
-            LogUtil.info("文件下载成功！");
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            LogUtil.info("文件下载失败！");
-        } finally {
-            try {
-                bin.close();
-                out.close();
-            } catch (Exception e) {
-
-            }
-            return file;
-        }
-    }
-
     public static void getFiles(HashTree tree, List<BodyFile> files) {
         for (Object key : tree.keySet()) {
             HashTree node = tree.get(key);
@@ -245,56 +179,30 @@ public class ZipSpider {
         }
     }
 
-    public static void downloadFiles(String uri, HashTree hashTree) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN));
-        List<BodyFile> files = new ArrayList<>();
-        ZipSpider.getFiles(hashTree, files);
-        if (CollectionUtils.isNotEmpty(files)) {
-            try {
-                URL urlObject = new URL(uri);
-                String url = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/files";
-                LogUtil.info("开始同步下载附件：" + url);
-                ZipSpider.downloadFile(url, FileUtils.BODY_FILE_DIR, JSON.toJSONString(files));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public static byte[] get(String uri, RestTemplate restTemplate) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN));
-        ResponseEntity<byte[]> result = restTemplate.getForEntity(uri, byte[].class);
-        return result.getBody();
-    }
-
     @SuppressWarnings("finally")
     public static File downloadFile(String urlPath, String downloadDir) {
-        File file = null;
+        OutputStream out = null;
+        BufferedInputStream bin = null;
         try {
             URL url = new URL(urlPath);
             URLConnection urlConnection = url.openConnection();
             HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
-            //String contentType = httpURLConnection.getContentType();//请求类型,可用来过滤请求，
             httpURLConnection.setConnectTimeout(1000 * 5);//设置超时
             httpURLConnection.setRequestMethod("GET");//设置请求方式，默认是GET
             httpURLConnection.setRequestProperty("Charset", "UTF-8");// 设置字符编码
             httpURLConnection.connect();// 打开连接
 
-            BufferedInputStream bin = new BufferedInputStream(httpURLConnection.getInputStream());
+            bin = new BufferedInputStream(httpURLConnection.getInputStream());
             String fileName = httpURLConnection.getHeaderField("Content-Disposition");
             fileName = URLDecoder.decode(fileName.substring(fileName.indexOf("filename") + 10, fileName.length() - 1), "UTF-8");
             String path = downloadDir + File.separatorChar + fileName;// 指定存放位置
-            file = new File(path);
+            File file = new File(path);
             // 校验文件夹目录是否存在，不存在就创建一个目录
-            if (!file.getParentFile().exists()) {
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
             }
 
-            OutputStream out = new FileOutputStream(file);
+            out = new FileOutputStream(file);
             int size = 0;
 
             byte[] b = new byte[2048];
@@ -306,6 +214,7 @@ public class ZipSpider {
             bin.close();
             out.close();
             LogUtil.info("文件下载成功！");
+            return file;
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -314,7 +223,17 @@ public class ZipSpider {
             e.printStackTrace();
             LogUtil.info("文件下载失败！");
         } finally {
-            return file;
+            try {
+                if (bin != null) {
+                    bin.close();
+                }
+                if (out != null) {
+                    out.close();
+                }
+            } catch (Exception e) {
+
+            }
         }
+        return null;
     }
 }

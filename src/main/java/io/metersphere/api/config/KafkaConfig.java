@@ -7,19 +7,20 @@ import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
 public class KafkaConfig {
-    public final static String testTopic = "ms-api-exec-topic";
+    // 执行内容监听
+    public final static String EXEC_TOPIC = "ms-automation-exec-topic121";
+    //执行结果回传
+    public static final String TOPICS = "ms-api-exec-topic1212";
 
     @Bean
     public NewTopic apiExecTopic() {
-        return TopicBuilder.name(testTopic)
+        return TopicBuilder.name(TOPICS)
                 .build();
     }
 
-    public final static String execTopic = "ms-automation-exec-topic";
-
     @Bean
     public NewTopic automationTopic() {
-        return TopicBuilder.name(execTopic)
+        return TopicBuilder.name(EXEC_TOPIC)
                 .build();
     }
 }

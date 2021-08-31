@@ -30,6 +30,8 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     public final static String TEST_REPORT_ID = "ms.test.report.name";
 
+    public final static String AMASS_REPORT = "ms.test.amass.report.id";
+
     private final static String THREAD_SPLIT = " ";
 
     private final static String ID_SPLIT = "-";
@@ -54,6 +56,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
      */
     private String setReportId;
 
+    private String amassReport;
     /**
      * 获得控制台内容
      */
@@ -92,56 +95,61 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.setDebug(this.isDebug);
         testResult.setUserId(this.userId);
         jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
-        // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id
-        final Map<String, ScenarioResult> scenarios = new LinkedHashMap<>();
-        queue.forEach(result -> {
-            // 线程名称: <场景名> <场景Index>-<请求Index>, 例如：Scenario 2-1
-            if (StringUtils.equals(result.getSampleLabel(), "RunningDebugSampler")) {
-                String evnStr = result.getResponseDataAsString();
-                testResult.setRunningDebugSampler(result.getResponseDataAsString());
-             } else {
-                String scenarioName = StringUtils.substringBeforeLast(result.getThreadName(), THREAD_SPLIT);
-                String index = StringUtils.substringAfterLast(result.getThreadName(), THREAD_SPLIT);
-                String scenarioId = StringUtils.substringBefore(index, ID_SPLIT);
-                ScenarioResult scenarioResult;
-                if (!scenarios.containsKey(scenarioId)) {
-                    scenarioResult = new ScenarioResult();
-                    try {
-                        scenarioResult.setId(Integer.parseInt(scenarioId));
-                    } catch (Exception e) {
-                        scenarioResult.setId(0);
-                        LogUtil.error("场景ID转换异常: " + e.getMessage());
+        try {
+
+            // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id
+            final Map<String, ScenarioResult> scenarios = new LinkedHashMap<>();
+            queue.forEach(result -> {
+                // 线程名称: <场景名> <场景Index>-<请求Index>, 例如：Scenario 2-1
+                if (StringUtils.equals(result.getSampleLabel(), "RunningDebugSampler")) {
+                    testResult.setRunningDebugSampler(result.getResponseDataAsString());
+                } else {
+                    String scenarioName = StringUtils.substringBeforeLast(result.getThreadName(), THREAD_SPLIT);
+                    String index = StringUtils.substringAfterLast(result.getThreadName(), THREAD_SPLIT);
+                    String scenarioId = StringUtils.substringBefore(index, ID_SPLIT);
+                    ScenarioResult scenarioResult;
+                    if (!scenarios.containsKey(scenarioId)) {
+                        scenarioResult = new ScenarioResult();
+                        try {
+                            scenarioResult.setId(Integer.parseInt(scenarioId));
+                        } catch (Exception e) {
+                            scenarioResult.setId(0);
+                            LogUtil.error("场景ID转换异常: " + e.getMessage());
+                        }
+                        scenarioResult.setName(scenarioName);
+                        scenarios.put(scenarioId, scenarioResult);
+                    } else {
+                        scenarioResult = scenarios.get(scenarioId);
                     }
-                    scenarioResult.setName(scenarioName);
-                    scenarios.put(scenarioId, scenarioResult);
-                } else {
-                    scenarioResult = scenarios.get(scenarioId);
+
+                    if (result.isSuccessful()) {
+                        scenarioResult.addSuccess();
+                        testResult.addSuccess();
+                    } else {
+                        scenarioResult.addError(result.getErrorCount());
+                        testResult.addError(result.getErrorCount());
+                    }
+
+                    RequestResult requestResult = getRequestResult(result);
+                    scenarioResult.getRequestResults().add(requestResult);
+                    scenarioResult.addResponseTime(result.getTime());
+
+                    testResult.addPassAssertions(requestResult.getPassAssertions());
+                    testResult.addTotalAssertions(requestResult.getTotalAssertions());
+
+                    scenarioResult.addPassAssertions(requestResult.getPassAssertions());
+                    scenarioResult.addTotalAssertions(requestResult.getTotalAssertions());
                 }
-
-                if (result.isSuccessful()) {
-                    scenarioResult.addSuccess();
-                    testResult.addSuccess();
-                } else {
-                    scenarioResult.addError(result.getErrorCount());
-                    testResult.addError(result.getErrorCount());
-                }
-
-                RequestResult requestResult = getRequestResult(result);
-                scenarioResult.getRequestResults().add(requestResult);
-                scenarioResult.addResponseTime(result.getTime());
-
-                testResult.addPassAssertions(requestResult.getPassAssertions());
-                testResult.addTotalAssertions(requestResult.getTotalAssertions());
-
-                scenarioResult.addPassAssertions(requestResult.getPassAssertions());
-                scenarioResult.addTotalAssertions(requestResult.getTotalAssertions());
-            }
-        });
-        testResult.getScenarios().addAll(scenarios.values());
-        testResult.getScenarios().sort(Comparator.comparing(ScenarioResult::getId));
-        testResult.setRunMode(this.runMode);
+            });
+            testResult.getScenarios().addAll(scenarios.values());
+            testResult.getScenarios().sort(Comparator.comparing(ScenarioResult::getId));
+            testResult.setRunMode(this.runMode);
+        } catch (Exception e) {
+            LogUtil.error("处理执行数据异常：" + e.getMessage());
+        }
         // 推送执行结果
         jmeterExecuteService.sendMessage(JSON.toJSONString(testResult));
+        jmeterExecuteService.remove(amassReport,testId);
         queue.clear();
         super.teardownTest(context);
     }
@@ -232,6 +240,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
     private void setParam(BackendListenerContext context) {
         this.testId = context.getParameter(TEST_ID);
         this.setReportId = context.getParameter(TEST_REPORT_ID);
+        this.amassReport = context.getParameter(AMASS_REPORT);
         this.runMode = context.getParameter("runMode");
         this.isDebug = StringUtils.equals(context.getParameter("DEBUG"), "DEBUG") ? true : false;
         this.userId = context.getParameter("USER_ID");

@@ -64,6 +64,9 @@ public class JMeterService {
             backendListener.setName(request.getTestId());
         }
         Arguments arguments = new Arguments();
+        if (StringUtils.isNotEmpty(request.getAmassReport())) {
+            arguments.addArgument(APIBackendListenerClient.AMASS_REPORT, request.getAmassReport());
+        }
         if (request.getConfig() != null && request.getConfig().getMode().equals("serial") && request.getConfig().getReportType().equals("setReport")) {
             arguments.addArgument(APIBackendListenerClient.TEST_REPORT_ID, request.getConfig().getReportName());
         }
