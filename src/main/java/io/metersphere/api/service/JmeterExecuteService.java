@@ -1,6 +1,5 @@
 package io.metersphere.api.service;
 
-import io.metersphere.api.config.KafkaConfig;
 import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.FileUtils;
@@ -108,6 +107,7 @@ public class JmeterExecuteService {
                 HashTree testPlan = SaveService.loadTree(jmxFile);
                 // 开始执行
                 jMeterService.run(runRequest, testPlan);
+                FileUtils.deleteFile(bodyFile.getPath());
             } else {
                 MSException.throwException("未找到执行的JMX文件");
             }
@@ -116,11 +116,6 @@ public class JmeterExecuteService {
             return e.getMessage();
         }
         return "SUCCESS";
-    }
-
-    public void sendMessage(String message) {
-        kafkaTemplate.send(KafkaConfig.TOPICS, message);
-        kafkaTemplate.flush();
     }
 
     public void putRunningTasks(String key, String value) {
@@ -152,6 +147,7 @@ public class JmeterExecuteService {
             if (file != null) {
                 ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                 this.loadJar(FileUtils.JAR_FILE_DIR);
+                FileUtils.deleteFile(file.getPath());
             }
         }
     }

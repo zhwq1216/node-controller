@@ -6,6 +6,7 @@ import io.metersphere.api.jmeter.constants.RequestType;
 import io.metersphere.api.module.*;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.service.JmeterExecuteService;
+import io.metersphere.api.service.ProducerService;
 import io.metersphere.node.util.LogUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.common.utils.CollectionUtils;
@@ -45,7 +46,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
     private boolean isDebug;
 
     private JmeterExecuteService jmeterExecuteService;
-
+    private ProducerService producerServer;
     /**
      * 测试ID
      */
@@ -95,6 +96,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.setDebug(this.isDebug);
         testResult.setUserId(this.userId);
         jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
+        producerServer = CommonBeanFactory.getBean(ProducerService.class);
         try {
 
             // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id
@@ -148,8 +150,8 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
             LogUtil.error("处理执行数据异常：" + e.getMessage());
         }
         // 推送执行结果
-        jmeterExecuteService.sendMessage(JSON.toJSONString(testResult));
-        jmeterExecuteService.remove(amassReport,testId);
+        producerServer.send(JSON.toJSONString(testResult));
+        jmeterExecuteService.remove(amassReport, testId);
         queue.clear();
         super.teardownTest(context);
     }
