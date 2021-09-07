@@ -1,11 +1,25 @@
-package io.metersphere.api.service;
+package io.metersphere.api.service.utils;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.alibaba.fastjson.JSON;
+import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.node.util.LogUtil;
+import org.apache.dubbo.common.utils.CollectionUtils;
+import org.apache.jmeter.config.CSVDataSet;
+import org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy;
+import org.apache.jmeter.protocol.http.util.HTTPFileArg;
+import org.apache.jorphan.collections.HashTree;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 public class ZipSpider {
 
@@ -78,34 +92,33 @@ public class ZipSpider {
 
     //解压本地文件至目的文件路径
     public static void unzip(String fromFile, String toFile) {
-        try {
-            ZipInputStream Zin = new ZipInputStream(new FileInputStream(fromFile));
-            BufferedInputStream Bin = new BufferedInputStream(Zin);
+        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(fromFile)); BufferedInputStream bin = new BufferedInputStream(zin);) {
             String Parent = toFile;
-            File Fout = null;
             ZipEntry entry;
-            try {
-                while ((entry = Zin.getNextEntry()) != null && !entry.isDirectory()) {
-                    Fout = new File(Parent, entry.getName());
-                    if (!Fout.exists()) {
-                        (new File(Fout.getParent())).mkdirs();
-                    }
-                    FileOutputStream out = new FileOutputStream(Fout);
-                    BufferedOutputStream Bout = new BufferedOutputStream(out);
-                    int b;
-                    while ((b = Bin.read()) != -1) {
-                        Bout.write(b);
-                    }
-                    Bout.close();
-                    out.close();
-                    LogUtil.info(Fout + "解压成功");
+            while ((entry = zin.getNextEntry()) != null && !entry.isDirectory()) {
+                File fout = new File(Parent, entry.getName());
+                if (!fout.exists()) {
+                    (new File(fout.getParent())).mkdirs();
                 }
-                Bin.close();
-                Zin.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+                try (FileOutputStream out = new FileOutputStream(fout);
+                     BufferedOutputStream bout = new BufferedOutputStream(out);) {
+                    int b;
+                    while ((b = bin.read()) != -1) {
+                        bout.write(b);
+                    }
+                    bout.close();
+                    out.close();
+                    LogUtil.info(fout + "解压成功");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             }
+            bin.close();
+            zin.close();
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -138,30 +151,58 @@ public class ZipSpider {
         sop("");
     }
 
+    public static void getFiles(HashTree tree, List<BodyFile> files) {
+        for (Object key : tree.keySet()) {
+            HashTree node = tree.get(key);
+            if (key instanceof HTTPSamplerProxy) {
+                HTTPSamplerProxy source = (HTTPSamplerProxy) key;
+                if (source != null && source.getHTTPFiles().length > 0) {
+                    for (HTTPFileArg arg : source.getHTTPFiles()) {
+                        BodyFile file = new BodyFile();
+                        file.setId(arg.getParamName());
+                        file.setName(arg.getPath());
+                        files.add(file);
+                    }
+                }
+            } else if (key instanceof CSVDataSet) {
+                CSVDataSet source = (CSVDataSet) key;
+                if (source != null && source.getFilename() != null) {
+                    BodyFile file = new BodyFile();
+                    file.setId(source.getFilename());
+                    file.setName(source.getFilename());
+                    files.add(file);
+                }
+            }
+            if (node != null) {
+                getFiles(node, files);
+            }
+        }
+    }
+
     @SuppressWarnings("finally")
     public static File downloadFile(String urlPath, String downloadDir) {
-        File file = null;
+        OutputStream out = null;
+        BufferedInputStream bin = null;
         try {
             URL url = new URL(urlPath);
             URLConnection urlConnection = url.openConnection();
             HttpURLConnection httpURLConnection = (HttpURLConnection) urlConnection;// http的连接类
-            //String contentType = httpURLConnection.getContentType();//请求类型,可用来过滤请求，
             httpURLConnection.setConnectTimeout(1000 * 5);//设置超时
             httpURLConnection.setRequestMethod("GET");//设置请求方式，默认是GET
             httpURLConnection.setRequestProperty("Charset", "UTF-8");// 设置字符编码
             httpURLConnection.connect();// 打开连接
 
-            BufferedInputStream bin = new BufferedInputStream(httpURLConnection.getInputStream());
+            bin = new BufferedInputStream(httpURLConnection.getInputStream());
             String fileName = httpURLConnection.getHeaderField("Content-Disposition");
             fileName = URLDecoder.decode(fileName.substring(fileName.indexOf("filename") + 10, fileName.length() - 1), "UTF-8");
             String path = downloadDir + File.separatorChar + fileName;// 指定存放位置
-            file = new File(path);
+            File file = new File(path);
             // 校验文件夹目录是否存在，不存在就创建一个目录
-            if (!file.getParentFile().exists()) {
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
                 file.getParentFile().mkdirs();
             }
 
-            OutputStream out = new FileOutputStream(file);
+            out = new FileOutputStream(file);
             int size = 0;
 
             byte[] b = new byte[2048];
@@ -173,6 +214,7 @@ public class ZipSpider {
             bin.close();
             out.close();
             LogUtil.info("文件下载成功！");
+            return file;
         } catch (MalformedURLException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -181,7 +223,17 @@ public class ZipSpider {
             e.printStackTrace();
             LogUtil.info("文件下载失败！");
         } finally {
-            return file;
+            try {
+                if (bin != null) {
+                    bin.close();
+                }
+                if (out != null) {
+                    out.close();
+                }
+            } catch (Exception e) {
+
+            }
         }
+        return null;
     }
 }

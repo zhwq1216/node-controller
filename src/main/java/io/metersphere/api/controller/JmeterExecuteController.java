@@ -42,4 +42,9 @@ public class JmeterExecuteController {
         return JvmService.jvmInfo();
     }
 
+    @GetMapping("/getRunning/{key}")
+    public Integer getRunning(@PathVariable String key) {
+        return jmeterExecuteService.getRunningTasks(key);
+    }
+
 }
