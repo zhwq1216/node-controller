@@ -96,6 +96,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.setSetReportId(this.setReportId);
         testResult.setDebug(this.isDebug);
         testResult.setUserId(this.userId);
+        testResult.setConsole(getConsole());
         jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
         producerServer = CommonBeanFactory.getBean(ProducerService.class);
         MessageCache.runningEngine.remove(testId);
@@ -212,8 +213,6 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
                 responseResult.getAssertions().add(responseAssertionResult);
             }
         }
-        responseResult.setConsole(getConsole());
-
         return requestResult;
     }
 
