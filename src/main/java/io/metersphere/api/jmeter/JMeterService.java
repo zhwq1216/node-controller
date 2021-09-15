@@ -10,7 +10,6 @@ import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jmeter.visualizers.backend.BackendListener;
 import org.apache.jorphan.collections.HashTree;
-import org.python.antlr.ast.arguments;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -90,7 +89,7 @@ public class JMeterService {
             init();
             addBackendListener(testPlan, request);
             LocalRunner runner = new LocalRunner(testPlan);
-            runner.run();
+            runner.run(request.getReportId());
         } catch (Exception e) {
             LogUtil.error(e.getMessage(), e);
             MSException.throwException("读取脚本失败");

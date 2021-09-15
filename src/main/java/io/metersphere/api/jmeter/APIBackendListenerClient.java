@@ -3,6 +3,7 @@ package io.metersphere.api.jmeter;
 import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.constants.RequestType;
+import io.metersphere.api.jmeter.utils.MessageCache;
 import io.metersphere.api.module.*;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.service.JmeterExecuteService;
@@ -97,6 +98,8 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.setUserId(this.userId);
         jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
         producerServer = CommonBeanFactory.getBean(ProducerService.class);
+        MessageCache.runningEngine.remove(testId);
+        MessageCache.runningEngine.remove(setReportId);
         try {
 
             // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id

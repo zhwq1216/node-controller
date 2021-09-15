@@ -2,6 +2,7 @@ package io.metersphere.api.controller;
 
 import com.alibaba.fastjson.JSON;
 import io.metersphere.api.controller.request.RunRequest;
+import io.metersphere.api.jmeter.LocalRunner;
 import io.metersphere.api.module.JvmInfo;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.JvmService;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.util.List;
 
 @RestController
 @RequestMapping("/jmeter")
@@ -45,6 +47,11 @@ public class JmeterExecuteController {
     @GetMapping("/getRunning/{key}")
     public Integer getRunning(@PathVariable String key) {
         return jmeterExecuteService.getRunningTasks(key);
+    }
+
+    @GetMapping("/stop")
+    public void stop(@RequestBody List<String> keys) {
+        new LocalRunner().stop(keys);
     }
 
 }
