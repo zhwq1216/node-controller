@@ -78,7 +78,7 @@ public class JmeterOperateService {
                         try {
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
 
-                                copyTestResources(dockerClient, containerId, reportId, resourceIndex);
+//                                copyTestResources(dockerClient, containerId, reportId, resourceIndex);
 
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
