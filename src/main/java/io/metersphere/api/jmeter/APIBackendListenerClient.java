@@ -3,9 +3,9 @@ package io.metersphere.api.jmeter;
 import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.constants.RequestType;
+import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.MessageCache;
 import io.metersphere.api.module.*;
-import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.ProducerService;
 import io.metersphere.node.util.LogUtil;
@@ -99,10 +99,13 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         testResult.setConsole(getConsole());
         jmeterExecuteService = CommonBeanFactory.getBean(JmeterExecuteService.class);
         producerServer = CommonBeanFactory.getBean(ProducerService.class);
-        MessageCache.runningEngine.remove(testId);
-        MessageCache.runningEngine.remove(setReportId);
         try {
-
+            if (StringUtils.isNotEmpty(testId) && !MessageCache.runningEngine.isEmpty()) {
+                MessageCache.runningEngine.remove(testId);
+            }
+            if (StringUtils.isNotEmpty(setReportId) && !MessageCache.runningEngine.isEmpty()) {
+                MessageCache.runningEngine.remove(setReportId);
+            }
             // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id
             final Map<String, ScenarioResult> scenarios = new LinkedHashMap<>();
             queue.forEach(result -> {
