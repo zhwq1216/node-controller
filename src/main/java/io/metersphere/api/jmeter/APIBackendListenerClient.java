@@ -157,8 +157,22 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
             LogUtil.error("处理执行数据异常：" + e.getMessage());
         }
         // 推送执行结果
-        producerServer.send(JSON.toJSONString(testResult));
-        jmeterExecuteService.remove(amassReport, testId);
+        try {
+            producerServer.send(JSON.toJSONString(testResult));
+        } catch (Exception ex) {
+            LogUtil.error("KAFKA 推送结果异常：[" + testId + "]" + ex.getMessage());
+            // 补偿一个结果防止持续Running
+            testResult.getScenarios().clear();
+            producerServer.send(JSON.toJSONString(testResult));
+        }
+        LogUtil.info("接口收到集合报告ID：" + amassReport);
+
+        if (StringUtils.isNotEmpty(amassReport)) {
+            jmeterExecuteService.remove(amassReport, testId);
+            LogUtil.info("正在执行中的并发报告数量：" + jmeterExecuteService.getRunningSize());
+            LogUtil.info("正在执行中的场景[" + amassReport + "]的数量：" + jmeterExecuteService.getRunningTasks(amassReport));
+            LogUtil.info("正在执行中的场景[" + amassReport + "]的内容：" + jmeterExecuteService.getRunningList(amassReport));
+        }
         queue.clear();
         super.teardownTest(context);
     }

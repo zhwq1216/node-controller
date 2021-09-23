@@ -1,5 +1,6 @@
 package io.metersphere.api.service;
 
+import com.alibaba.fastjson.JSON;
 import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.FileUtils;
@@ -10,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.NewDriver;
 import org.apache.jmeter.save.SaveService;
 import org.apache.jorphan.collections.HashTree;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,8 +30,6 @@ import java.util.Map;
 public class JmeterExecuteService {
     @Resource
     private JMeterService jMeterService;
-    @Resource
-    private KafkaTemplate<String, Object> kafkaTemplate;
 
     private static String url = null;
     // 记录所以执行中的请求/场景
@@ -132,6 +130,17 @@ public class JmeterExecuteService {
             return this.runningTasks.get(key).size();
         }
         return 0;
+    }
+
+    public int getRunningSize() {
+        return this.runningTasks.size();
+    }
+
+    public String getRunningList(String key) {
+        if (this.runningTasks.containsKey(key)) {
+            return JSON.toJSONString(this.runningTasks.get(key));
+        }
+        return null;
     }
 
     public void remove(String key, String value) {
