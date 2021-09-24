@@ -34,7 +34,7 @@ import java.util.zip.ZipOutputStream;
 @Service
 public class JmeterOperateService {
     @Resource
-    private KafkaProducer kafkaProducer;
+    private KafkaProducerService kafkaProducerService;
 
     public void startContainer(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
@@ -43,6 +43,8 @@ public class JmeterOperateService {
         String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
         // 检查kafka连通性
         checkKafka(bootstrapServers);
+        // 初始化kafka
+        kafkaProducerService.init(bootstrapServers);
 
         DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
 
@@ -85,7 +87,7 @@ public class JmeterOperateService {
                             // 上传结束消息
                             String[] contents = new String[]{reportId, "none", "0", "Remove container completed"};
                             String log = StringUtils.join(contents, " ");
-                            kafkaProducer.sendMessage(topic, log);
+                            kafkaProducerService.sendMessage(topic, log);
                             LogUtil.info("Remove container completed: " + containerId);
                         } catch (Exception e) {
                             LogUtil.error("Remove container error: ", e);
@@ -108,7 +110,7 @@ public class JmeterOperateService {
                             // oom 退出
                             String[] contents = new String[]{reportId, "none", "0", oomMessage};
                             String message = StringUtils.join(contents, " ");
-                            kafkaProducer.sendMessage(topic, message);
+                            kafkaProducerService.sendMessage(topic, message);
                         }
                         LogUtil.info(log);
                     }
