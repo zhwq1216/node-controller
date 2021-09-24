@@ -3,9 +3,11 @@ package io.metersphere.node.service;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
 
 import java.util.Properties;
 
+@Service
 public class KafkaProducerService {
     private KafkaTemplate kafkaTemplate;
 
