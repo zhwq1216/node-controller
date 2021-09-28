@@ -162,7 +162,13 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         } catch (Exception ex) {
             LogUtil.error("KAFKA 推送结果异常：[" + testId + "]" + ex.getMessage());
             // 补偿一个结果防止持续Running
-            testResult.getScenarios().clear();
+            if (testResult != null && testResult.getScenarios().size() > 0) {
+                for (ScenarioResult scenario : testResult.getScenarios()) {
+                    if (scenario.getRequestResults() != null) {
+                        scenario.getRequestResults().clear();
+                    }
+                }
+            }
             producerServer.send(JSON.toJSONString(testResult));
         }
         LogUtil.info("接口收到集合报告ID：" + amassReport);
