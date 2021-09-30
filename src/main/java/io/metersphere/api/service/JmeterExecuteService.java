@@ -82,6 +82,9 @@ public class JmeterExecuteService {
 
     public String runStart(RunRequest runRequest) {
         try {
+            if (runRequest != null && StringUtils.isNotEmpty(runRequest.getAmassReport())) {
+                this.putRunningTasks(runRequest.getAmassReport(), runRequest.getTestId());
+            }
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());
             String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
