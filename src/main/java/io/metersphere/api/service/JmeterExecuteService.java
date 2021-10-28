@@ -30,6 +30,8 @@ import java.util.Map;
 public class JmeterExecuteService {
     @Resource
     private JMeterService jMeterService;
+    @Resource
+    private ProducerService producerService;
 
     private static String url = null;
     // 记录所以执行中的请求/场景
@@ -84,6 +86,13 @@ public class JmeterExecuteService {
         try {
             if (runRequest != null && StringUtils.isNotEmpty(runRequest.getAmassReport())) {
                 this.putRunningTasks(runRequest.getAmassReport(), runRequest.getTestId());
+            }
+            if (runRequest.getKafka() != null) {
+                LogUtil.info("KAFKA 信息：", JSON.toJSONString(runRequest.getKafka()));
+                String res = producerService.init(runRequest.getKafka());
+                if (!"SUCCESS".equals(res)) {
+                    return "KAFKA 初始化失败，请检查配置";
+                }
             }
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());
