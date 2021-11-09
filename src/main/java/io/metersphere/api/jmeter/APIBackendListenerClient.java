@@ -93,7 +93,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         TestResult testResult = new TestResult();
         testResult.setTestId(testId);
         testResult.setTotal(queue.size());
-        testResult.setSetReportId(this.setReportId);
+        testResult.setSetReportId(this.amassReport);
         testResult.setDebug(this.isDebug);
         testResult.setUserId(this.userId);
         testResult.setConsole(getConsole());
