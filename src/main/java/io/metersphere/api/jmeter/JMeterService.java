@@ -1,7 +1,6 @@
 package io.metersphere.api.jmeter;
 
 import io.metersphere.api.controller.request.RunRequest;
-import io.metersphere.api.jmeter.constants.ApiRunMode;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.node.util.LogUtil;
@@ -69,7 +68,7 @@ public class JMeterService {
         if (request.getConfig() != null && request.getConfig().getMode().equals("serial") && request.getConfig().getReportType().equals("setReport")) {
             arguments.addArgument(APIBackendListenerClient.TEST_REPORT_ID, request.getConfig().getReportName());
         }
-        if (StringUtils.isNotEmpty(request.getReportId()) && ApiRunMode.API_PLAN.name().equals(request.getRunMode())) {
+        if (StringUtils.isNotEmpty(request.getReportId())) {
             arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getReportId());
         } else {
             arguments.addArgument(APIBackendListenerClient.TEST_ID, request.getTestId());
