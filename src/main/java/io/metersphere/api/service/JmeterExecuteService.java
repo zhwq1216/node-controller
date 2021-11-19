@@ -19,8 +19,10 @@ import javax.annotation.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +58,50 @@ public class JmeterExecuteService {
         } catch (MalformedURLException e) {
             LogUtil.error(e.getMessage(), e);
             MSException.throwException(e.getMessage());
+        }
+    }
+
+    private static File[] listJars(File dir) {
+        if (dir.isDirectory()) {
+            return dir.listFiles((f, name) -> {
+                if (name.endsWith(".jar")) {// $NON-NLS-1$
+                    File jar = new File(f, name);
+                    return jar.isFile() && jar.canRead();
+                }
+                return false;
+            });
+        }
+        return new File[0];
+    }
+
+    private void loadPlugJar(String jarPath) {
+        File file = new File(jarPath);
+        if (file.isDirectory() && !jarPath.endsWith("/")) {// $NON-NLS-1$
+            file = new File(jarPath + "/");// $NON-NLS-1$
+        }
+
+        File[] jars = listJars(file);
+        for (File jarFile : jars) {
+            // 从URLClassLoader类中获取类所在文件夹的方法，jar也可以认为是一个文件夹
+            Method method = null;
+            try {
+                method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+            } catch (NoSuchMethodException | SecurityException e1) {
+                e1.printStackTrace();
+            }
+            // 获取方法的访问权限以便写回
+            try {
+                method.setAccessible(true);
+                // 获取系统类加载器
+                URLClassLoader classLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+
+                URL url = jarFile.toURI().toURL();
+                //URLClassLoader classLoader = new URLClassLoader(new URL[]{url});
+
+                method.invoke(classLoader, url);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -97,13 +143,20 @@ public class JmeterExecuteService {
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());
             String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
+            String plugJarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/plug/jar";
 
             if (StringUtils.isEmpty(url)) {
-                LogUtil.info("开始同步上传的第三方JAR：" + jarUrl);
+                LogUtil.info("开始同步上传的JAR：" + jarUrl);
                 File file = ZipSpider.downloadFile(jarUrl, FileUtils.JAR_FILE_DIR);
                 if (file != null) {
                     ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                     this.loadJar(FileUtils.JAR_FILE_DIR);
+                }
+                LogUtil.info("开始同步插件JAR：" + plugJarUrl);
+                File plugFile = ZipSpider.downloadFile(plugJarUrl, FileUtils.JAR_PLUG_FILE_DIR);
+                if (plugFile != null) {
+                    ZipSpider.unzip(plugFile.getPath(), FileUtils.JAR_PLUG_FILE_DIR);
+                    this.loadPlugJar(FileUtils.JAR_PLUG_FILE_DIR);
                 }
             }
             url = jarUrl;
