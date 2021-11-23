@@ -3,6 +3,8 @@ package io.metersphere.api.controller.request;
 import io.metersphere.api.jmeter.utils.RunModeConfig;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class RunRequest {
     private String testId;
@@ -16,4 +18,7 @@ public class RunRequest {
     // 集成报告ID
     private String amassReport;
     private RunModeConfig config;
+
+    private Map<String, Object> kafka;
+
 }

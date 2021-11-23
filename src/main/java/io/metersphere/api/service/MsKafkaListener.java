@@ -4,7 +4,6 @@ import io.metersphere.api.config.KafkaConfig;
 import io.metersphere.api.controller.request.RunRequest;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.node.util.LogUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -24,9 +23,6 @@ public class MsKafkaListener {
         try {
             if (record.value() != null) {
                 RunRequest request = JSON.parseObject(record.value(), RunRequest.class);
-                if (StringUtils.isNotEmpty(request.getAmassReport())) {
-                    jmeterExecuteService.putRunningTasks(request.getAmassReport(), request.getTestId());
-                }
                 jmeterExecuteService.runStart(request);
             }
         } catch (Exception e) {
