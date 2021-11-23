@@ -36,6 +36,8 @@ public class JmeterExecuteService {
     private ProducerService producerService;
 
     private static String url = null;
+    private static String plugUrl = null;
+
     // 记录所以执行中的请求/场景
     private Map<String, List<String>> runningTasks = new HashMap<>();
 
@@ -152,6 +154,8 @@ public class JmeterExecuteService {
                     ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                     this.loadJar(FileUtils.JAR_FILE_DIR);
                 }
+            }
+            if (StringUtils.isEmpty(plugUrl)) {
                 LogUtil.info("开始同步插件JAR：" + plugJarUrl);
                 File plugFile = ZipSpider.downloadFile(plugJarUrl, FileUtils.JAR_PLUG_FILE_DIR);
                 if (plugFile != null) {
@@ -160,6 +164,7 @@ public class JmeterExecuteService {
                 }
             }
             url = jarUrl;
+            plugUrl = plugJarUrl;
             LogUtil.info("开始拉取脚本和脚本附件：" + runRequest.getUrl());
 
             File bodyFile = ZipSpider.downloadFile(runRequest.getUrl(), FileUtils.BODY_FILE_DIR);
@@ -222,6 +227,12 @@ public class JmeterExecuteService {
                 ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                 this.loadJar(FileUtils.JAR_FILE_DIR);
                 FileUtils.deleteFile(file.getPath());
+            }
+            LogUtil.info("开始同步插件JAR：" + plugUrl);
+            File plugFile = ZipSpider.downloadFile(plugUrl, FileUtils.JAR_PLUG_FILE_DIR);
+            if (plugFile != null) {
+                ZipSpider.unzip(plugFile.getPath(), FileUtils.JAR_PLUG_FILE_DIR);
+                this.loadPlugJar(FileUtils.JAR_PLUG_FILE_DIR);
             }
         }
     }
