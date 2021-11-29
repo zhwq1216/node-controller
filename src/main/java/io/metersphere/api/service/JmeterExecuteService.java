@@ -228,10 +228,14 @@ public class JmeterExecuteService {
                 this.loadJar(FileUtils.JAR_FILE_DIR);
                 FileUtils.deleteFile(file.getPath());
             }
+            // 清理历史jar
+            FileUtils.deletePath(FileUtils.JAR_PLUG_FILE_DIR);
+
             LogUtil.info("开始同步插件JAR：" + plugUrl);
             File plugFile = ZipSpider.downloadFile(plugUrl, FileUtils.JAR_PLUG_FILE_DIR);
             if (plugFile != null) {
                 ZipSpider.unzip(plugFile.getPath(), FileUtils.JAR_PLUG_FILE_DIR);
+                FileUtils.deleteFile(file.getPath());
                 this.loadPlugJar(FileUtils.JAR_PLUG_FILE_DIR);
             }
         }

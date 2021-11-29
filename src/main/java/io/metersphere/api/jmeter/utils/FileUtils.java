@@ -30,10 +30,31 @@ public class FileUtils {
             }
         }
     }
+
     public static void deleteFile(String path) {
         File file = new File(path);
         if (file.exists()) {
             file.delete();
+        }
+    }
+
+    private static File[] getFiles(File dir) {
+        return dir.listFiles((f, name) -> {
+            File jar = new File(f, name);
+            return jar.isFile() && jar.canRead();
+        });
+    }
+
+
+    public static void deletePath(String path) {
+        File file = new File(path);
+        if (file.isDirectory()) {// $NON-NLS-1$
+            file = new File(path + "/");
+        }
+
+        File[] files = getFiles(file);
+        for (int i = 0; i < files.length; i++) {
+            files[i].delete();
         }
     }
 }
