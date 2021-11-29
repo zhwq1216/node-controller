@@ -222,6 +222,7 @@ public class JmeterExecuteService {
     @Scheduled(cron = "0 0/5 * * * ?")
     public void execute() {
         if (StringUtils.isNotEmpty(url)) {
+            FileUtils.deletePath(FileUtils.JAR_FILE_DIR);
             File file = ZipSpider.downloadFile(url, FileUtils.JAR_FILE_DIR);
             if (file != null) {
                 ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
@@ -230,7 +231,6 @@ public class JmeterExecuteService {
             }
             // 清理历史jar
             FileUtils.deletePath(FileUtils.JAR_PLUG_FILE_DIR);
-
             LogUtil.info("开始同步插件JAR：" + plugUrl);
             File plugFile = ZipSpider.downloadFile(plugUrl, FileUtils.JAR_PLUG_FILE_DIR);
             if (plugFile != null) {
