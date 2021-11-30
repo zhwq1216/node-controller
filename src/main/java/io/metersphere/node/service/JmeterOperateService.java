@@ -70,7 +70,6 @@ public class JmeterOperateService {
 
         String topic = testRequest.getEnv().getOrDefault("LOG_TOPIC", "JMETER_LOGS");
         String reportId = testRequest.getEnv().get("REPORT_ID");
-        String resourceIndex = testRequest.getEnv().get("RESOURCE_INDEX");
 
         dockerClient.waitContainerCmd(containerId)
                 .exec(new WaitContainerResultCallback() {
@@ -79,15 +78,9 @@ public class JmeterOperateService {
                         // 清理文件夹
                         try {
                             if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
-
 //                                copyTestResources(dockerClient, containerId, reportId, resourceIndex);
-
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
-                            // 上传结束消息
-                            String[] contents = new String[]{reportId, "none", "0", "Remove container completed"};
-                            String log = StringUtils.join(contents, " ");
-                            kafkaProducerService.sendMessage(topic, log);
                             LogUtil.info("Remove container completed: " + containerId);
                         } catch (Exception e) {
                             LogUtil.error("Remove container error: ", e);
