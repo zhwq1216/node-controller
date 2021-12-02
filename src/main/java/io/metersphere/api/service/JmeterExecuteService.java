@@ -135,12 +135,8 @@ public class JmeterExecuteService {
             if (runRequest != null && StringUtils.isNotEmpty(runRequest.getAmassReport())) {
                 this.putRunningTasks(runRequest.getAmassReport(), runRequest.getTestId());
             }
-            if (runRequest.getKafka() != null) {
-                LogUtil.info("KAFKA 信息：", JSON.toJSONString(runRequest.getKafka()));
-                String res = producerService.init(runRequest.getKafka());
-                if (!"SUCCESS".equals(res)) {
-                    return "KAFKA 初始化失败，请检查配置";
-                }
+            if (runRequest.getKafka() == null) {
+                return "KAFKA 初始化失败，请检查配置";
             }
             // 生成附件/JAR文件
             URL urlObject = new URL(runRequest.getUrl());
@@ -222,16 +218,20 @@ public class JmeterExecuteService {
     @Scheduled(cron = "0 0/5 * * * ?")
     public void execute() {
         if (StringUtils.isNotEmpty(url)) {
+            FileUtils.deletePath(FileUtils.JAR_FILE_DIR);
             File file = ZipSpider.downloadFile(url, FileUtils.JAR_FILE_DIR);
             if (file != null) {
                 ZipSpider.unzip(file.getPath(), FileUtils.JAR_FILE_DIR);
                 this.loadJar(FileUtils.JAR_FILE_DIR);
                 FileUtils.deleteFile(file.getPath());
             }
+            // 清理历史jar
+            FileUtils.deletePath(FileUtils.JAR_PLUG_FILE_DIR);
             LogUtil.info("开始同步插件JAR：" + plugUrl);
             File plugFile = ZipSpider.downloadFile(plugUrl, FileUtils.JAR_PLUG_FILE_DIR);
             if (plugFile != null) {
                 ZipSpider.unzip(plugFile.getPath(), FileUtils.JAR_PLUG_FILE_DIR);
+                FileUtils.deleteFile(file.getPath());
                 this.loadPlugJar(FileUtils.JAR_PLUG_FILE_DIR);
             }
         }

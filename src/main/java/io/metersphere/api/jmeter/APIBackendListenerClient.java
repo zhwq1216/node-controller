@@ -30,7 +30,11 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
 
     public final static String TEST_ID = "ms.test.id";
 
+    public final static String KAFKA_CONFIG = "ms.kafka.config";
+
     public final static String TEST_REPORT_ID = "ms.test.report.name";
+
+    public final static String REPORT_ID = "ms.test.report.id";
 
     public final static String AMASS_REPORT = "ms.test.amass.report.id";
 
@@ -59,6 +63,11 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
     private String setReportId;
 
     private String amassReport;
+
+    private String reportId;
+
+    private Map<String, Object> producerProps;
+
     /**
      * 获得控制台内容
      */
@@ -105,6 +114,9 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
             }
             if (StringUtils.isNotEmpty(setReportId) && !MessageCache.runningEngine.isEmpty()) {
                 MessageCache.runningEngine.remove(setReportId);
+            }
+            if (StringUtils.isNotEmpty(reportId) && !MessageCache.runningEngine.isEmpty()) {
+                MessageCache.runningEngine.remove(reportId);
             }
             // 一个脚本里可能包含多个场景(ThreadGroup)，所以要区分开，key: 场景Id
             final Map<String, ScenarioResult> scenarios = new LinkedHashMap<>();
@@ -158,7 +170,10 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         }
         // 推送执行结果
         try {
-            producerServer.send(JSON.toJSONString(testResult));
+            LogUtil.info("执行完成开始同步发送KAFKA【" + testResult.getTestId() + "】");
+            producerServer.send(JSON.toJSONString(testResult), producerProps);
+            LogUtil.info("同步发送报告信息到KAFKA完成【" + testResult.getTestId() + "】");
+
         } catch (Exception ex) {
             LogUtil.error("KAFKA 推送结果异常：[" + testId + "]" + ex.getMessage());
             // 补偿一个结果防止持续Running
@@ -169,7 +184,7 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
                     }
                 }
             }
-            producerServer.send(JSON.toJSONString(testResult));
+            producerServer.send(JSON.toJSONString(testResult), producerProps);
         }
         LogUtil.info("接口收到集合报告ID：" + amassReport);
 
@@ -268,9 +283,11 @@ public class APIBackendListenerClient extends AbstractBackendListenerClient impl
         this.testId = context.getParameter(TEST_ID);
         this.setReportId = context.getParameter(TEST_REPORT_ID);
         this.amassReport = context.getParameter(AMASS_REPORT);
+        this.reportId = context.getParameter(REPORT_ID);
         this.runMode = context.getParameter("runMode");
         this.isDebug = StringUtils.equals(context.getParameter("DEBUG"), "DEBUG") ? true : false;
         this.userId = context.getParameter("USER_ID");
+        this.producerProps = JSON.parseObject(context.getParameter(KAFKA_CONFIG), Map.class);
         if (StringUtils.isBlank(this.runMode)) {
             this.runMode = ApiRunMode.RUN.name();
         }
