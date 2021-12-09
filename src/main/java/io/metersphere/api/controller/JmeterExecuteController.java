@@ -1,14 +1,12 @@
 package io.metersphere.api.controller;
 
 import com.alibaba.fastjson.JSON;
-import io.metersphere.api.controller.request.RunRequest;
-import io.metersphere.api.jmeter.LocalRunner;
 import io.metersphere.api.module.JvmInfo;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.JvmService;
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.dto.JmeterRunRequestDTO;
+import io.metersphere.jmeter.LocalRunner;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -20,15 +18,8 @@ public class JmeterExecuteController {
     @Resource
     private JmeterExecuteService jmeterExecuteService;
 
-    @PostMapping(value = "/api/run", consumes = {"multipart/form-data"})
-    public String apiRun(@RequestParam(value = "files") MultipartFile[] bodyFiles, @RequestParam(value = "jarFiles") MultipartFile[] jarFiles, String request) {
-        LogUtil.info("接收到测试请求 start ");
-        RunRequest runRequest = JSON.parseObject(request, RunRequest.class);
-        return jmeterExecuteService.run(runRequest, bodyFiles, jarFiles);
-    }
-
     @PostMapping(value = "/api/start")
-    public String apiStartRun(@RequestBody RunRequest runRequest) {
+    public String apiStartRun(@RequestBody JmeterRunRequestDTO runRequest) {
         System.out.println("接收到测试请求： " + JSON.toJSONString(runRequest));
         return jmeterExecuteService.runStart(runRequest);
     }

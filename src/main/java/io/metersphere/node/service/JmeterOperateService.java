@@ -10,7 +10,7 @@ import com.github.dockerjava.core.InvocationBuilder;
 import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.util.CompressUtils;
 import io.metersphere.node.util.DockerClientService;
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
@@ -39,7 +39,7 @@ public class JmeterOperateService {
     public void startContainer(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
         String testId = env.get("TEST_ID");
-        LogUtil.info("Receive start container request, test id: {}", testId);
+        LoggerUtil.info("Receive start container request, test id: {}", testId);
         String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
         // 检查kafka连通性
         checkKafka(bootstrapServers);
@@ -66,7 +66,7 @@ public class JmeterOperateService {
         String containerId = DockerClientService.createContainers(dockerClient, testId, containerImage, hostConfig, envs).getId();
 
         DockerClientService.startContainer(dockerClient, containerId);
-        LogUtil.info("Container create started containerId: " + containerId);
+        LoggerUtil.info("Container create started containerId: " + containerId);
 
         String topic = testRequest.getEnv().getOrDefault("LOG_TOPIC", "JMETER_LOGS");
         String reportId = testRequest.getEnv().get("REPORT_ID");
@@ -81,11 +81,11 @@ public class JmeterOperateService {
 //                                copyTestResources(dockerClient, containerId, reportId, resourceIndex);
                                 DockerClientService.removeContainer(dockerClient, containerId);
                             }
-                            LogUtil.info("Remove container completed: " + containerId);
+                            LoggerUtil.info("Remove container completed: " + containerId);
                         } catch (Exception e) {
-                            LogUtil.error("Remove container error: ", e);
+                            LoggerUtil.error("Remove container error: ", e);
                         }
-                        LogUtil.info("completed....");
+                        LoggerUtil.info("completed....");
                     }
                 });
 
@@ -105,7 +105,7 @@ public class JmeterOperateService {
                             String message = StringUtils.join(contents, " ");
                             kafkaProducerService.sendMessage(topic, message);
                         }
-                        LogUtil.info(log);
+                        LoggerUtil.info(log);
                     }
                 });
     }
@@ -178,7 +178,7 @@ public class JmeterOperateService {
                 }
             }
         } catch (Exception e) {
-            LogUtil.error(e);
+            LoggerUtil.error(e);
             throw new RuntimeException("Failed to connect to Kafka");
         }
     }
@@ -214,7 +214,7 @@ public class JmeterOperateService {
 
 
     public void stopContainer(String testId) {
-        LogUtil.info("Receive stop container request, test: {}", testId);
+        LoggerUtil.info("Receive stop container request, test: {}", testId);
         DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
@@ -238,7 +238,7 @@ public class JmeterOperateService {
     }
 
     public String logContainer(String testId) {
-        LogUtil.info("Receive logs container request, test: {}", testId);
+        LoggerUtil.info("Receive logs container request, test: {}", testId);
         DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
@@ -263,7 +263,7 @@ public class JmeterOperateService {
                             }
                         }).awaitCompletion(100, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
-                LogUtil.error(e);
+                LoggerUtil.error(e);
             }
         }
         return sb.toString();

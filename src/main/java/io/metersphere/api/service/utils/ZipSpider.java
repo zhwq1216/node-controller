@@ -1,6 +1,6 @@
 package io.metersphere.api.service.utils;
 
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.apache.jmeter.config.CSVDataSet;
 import org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy;
 import org.apache.jmeter.protocol.http.util.HTTPFileArg;
@@ -78,15 +78,15 @@ public class ZipSpider {
                     while ((b = bin.read()) != -1) {
                         bout.write(b);
                     }
-                    LogUtil.info(fout + "解压成功");
+                    LoggerUtil.info(fout + "解压成功");
                 } catch (Exception e) {
-                    LogUtil.error(e);
+                    LoggerUtil.error(e);
                 }
             }
         } catch (FileNotFoundException e) {
-            LogUtil.error(e);
+            LoggerUtil.error(e);
         } catch (IOException e) {
-            LogUtil.error(e);
+            LoggerUtil.error(e);
         }
     }
 
@@ -128,6 +128,7 @@ public class ZipSpider {
             URLConnection urlConnection = url.openConnection();
             boolean useHttps = urlPath.startsWith("https");
             if (useHttps) {
+                LoggerUtil.info("进入HTTPS协议处理方法");
                 HttpsURLConnection https = (HttpsURLConnection) urlConnection;
                 trustAllHosts(https);
                 https.setHostnameVerifier(DO_NOT_VERIFY);
@@ -159,13 +160,13 @@ public class ZipSpider {
             // 关闭资源
             bin.close();
             out.close();
-            LogUtil.info("文件下载成功！");
+            LoggerUtil.info("文件下载成功！");
             return file;
         } catch (MalformedURLException e) {
-            LogUtil.error(e);
+            LoggerUtil.error(e);
         } catch (IOException e) {
-            LogUtil.error(e);
-            LogUtil.info("文件下载失败！");
+            LoggerUtil.error(e);
+            LoggerUtil.info("文件下载失败！");
         } finally {
             try {
                 if (bin != null) {

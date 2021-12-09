@@ -1,6 +1,6 @@
 package io.metersphere.api.jmeter.utils;
 
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.aspectj.util.FileUtil;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +24,7 @@ public class FileUtils {
                     file.createNewFile();
                     FileUtil.copyStream(in, out);
                 } catch (IOException e) {
-                    LogUtil.error(e);
+                    LoggerUtil.error(e);
                     MSException.throwException("文件处理异常");
                 }
             }

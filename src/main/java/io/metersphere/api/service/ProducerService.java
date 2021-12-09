@@ -1,7 +1,7 @@
 package io.metersphere.api.service;
 
 import io.metersphere.api.config.KafkaConfig;
-import io.metersphere.node.util.LogUtil;
+import io.metersphere.utils.LoggerUtil;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -31,7 +31,7 @@ public class ProducerService {
                 return kafkaTemplate;
             }
         } catch (Exception e) {
-            LogUtil.error(e);
+            LoggerUtil.error(e);
             return null;
         }
     }
