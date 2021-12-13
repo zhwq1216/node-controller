@@ -30,7 +30,7 @@ public class JMeterService {
         JMeterUtils.setJMeterHome(JMETER_HOME);
         JMeterUtils.setLocale(LocaleContextHolder.getLocale());
 
-        APIBackendListenerHandler.setConsole();
+        APISingleResultListener.setConsole();
     }
 
     public String getJmeterHome() {
@@ -51,7 +51,7 @@ public class JMeterService {
         try {
             init();
             runRequest.setHashTree(testPlan);
-            JMeterBase.addBackendListener(runRequest);
+            JMeterBase.addSyncListener(runRequest,APISingleResultListener.class.getCanonicalName());
             LocalRunner runner = new LocalRunner(testPlan);
             runner.run(runRequest.getReportId());
         } catch (Exception e) {
