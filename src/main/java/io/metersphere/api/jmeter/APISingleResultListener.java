@@ -1,6 +1,7 @@
 package io.metersphere.api.jmeter;
 
 import com.alibaba.fastjson.JSON;
+import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.ProducerService;
@@ -69,6 +70,7 @@ public class APISingleResultListener extends MsExecListener {
     @Override
     public void testEnded(ResultDTO dto, Map<String, Object> kafkaConfig) {
         LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
+        BlockingQueueUtil.remove(dto.getReportId());
         dto.setConsole(getConsole());
         if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
             dto.setArbitraryData(new HashMap<String, Object>() {{
