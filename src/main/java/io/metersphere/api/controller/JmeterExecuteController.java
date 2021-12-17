@@ -5,8 +5,10 @@ import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.module.JvmInfo;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.JvmService;
+import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.JmeterRunRequestDTO;
 import io.metersphere.jmeter.LocalRunner;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -22,7 +24,9 @@ public class JmeterExecuteController {
     @PostMapping(value = "/api/start")
     public String apiStartRun(@RequestBody JmeterRunRequestDTO runRequest) {
         System.out.println("接收到测试请求： " + JSON.toJSONString(runRequest));
-        if (BlockingQueueUtil.add(runRequest.getReportId())) {
+        if (StringUtils.equals(runRequest.getReportType(), RunModeConstants.SET_REPORT.toString())) {
+            return jmeterExecuteService.runStart(runRequest);
+        } else if (BlockingQueueUtil.add(runRequest.getReportId())) {
             return jmeterExecuteService.runStart(runRequest);
         }
         return "当前报告 " + runRequest.getReportId() + " 正在执行中";

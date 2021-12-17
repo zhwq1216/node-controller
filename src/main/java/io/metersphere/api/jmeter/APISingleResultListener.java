@@ -3,6 +3,7 @@ package io.metersphere.api.jmeter;
 import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
+import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.ProducerService;
 import io.metersphere.constants.RunModeConstants;
@@ -79,6 +80,8 @@ public class APISingleResultListener extends MsExecListener {
         } else {
             dto.getArbitraryData().put("TEST_END", true);
         }
+
+        FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
         // 存储结果
         this.send(dto, kafkaConfig);
     }
