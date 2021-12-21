@@ -1,5 +1,7 @@
 package io.metersphere.api.jmeter;
 
+import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
+import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.dto.JmeterRunRequestDTO;
@@ -47,16 +49,27 @@ public class JMeterService {
         }
     }
 
-    public void run(JmeterRunRequestDTO runRequest, HashTree testPlan) {
+    public void runLocal(JmeterRunRequestDTO runRequest, HashTree testPlan) {
         try {
             init();
             runRequest.setHashTree(testPlan);
-            JMeterBase.addSyncListener(runRequest,APISingleResultListener.class.getCanonicalName());
+            JMeterBase.addSyncListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
             LocalRunner runner = new LocalRunner(testPlan);
             runner.run(runRequest.getReportId());
         } catch (Exception e) {
             LoggerUtil.error(e.getMessage(), e);
             MSException.throwException("读取脚本失败");
         }
+    }
+
+    public void run(JmeterRunRequestDTO request) {
+        if (request.getCorePoolSize() > 0) {
+            CommonBeanFactory.getBean(ExecThreadPoolExecutor.class).setCorePoolSize(request.getCorePoolSize());
+        }
+        CommonBeanFactory.getBean(ExecThreadPoolExecutor.class).addTask(request);
+    }
+
+    public void addQueue(JmeterRunRequestDTO request) {
+        this.runLocal(request, request.getHashTree());
     }
 }

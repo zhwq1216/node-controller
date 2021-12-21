@@ -77,7 +77,8 @@ public class JmeterExecuteService {
                 // 生成执行脚本
                 HashTree testPlan = SaveService.loadTree(jmxFile);
                 // 开始执行
-                jMeterService.run(runRequest, testPlan);
+                runRequest.setHashTree(testPlan);
+                jMeterService.run(runRequest);
                 FileUtils.deleteFile(bodyFile.getPath());
             } else {
                 MSException.throwException("未找到执行的JMX文件");
