@@ -1,6 +1,5 @@
 package io.metersphere.api.controller;
 
-import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.module.JvmInfo;
 import io.metersphere.api.service.JmeterExecuteService;
@@ -23,7 +22,6 @@ public class JmeterExecuteController {
 
     @PostMapping(value = "/api/start")
     public String apiStartRun(@RequestBody JmeterRunRequestDTO runRequest) {
-        System.out.println("接收到测试请求： " + JSON.toJSONString(runRequest));
         if (StringUtils.equals(runRequest.getReportType(), RunModeConstants.SET_REPORT.toString())) {
             return jmeterExecuteService.runStart(runRequest);
         } else if (BlockingQueueUtil.add(runRequest.getReportId())) {

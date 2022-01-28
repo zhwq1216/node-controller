@@ -2,6 +2,7 @@ package io.metersphere.api.service;
 
 import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.JMeterService;
+import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.api.service.utils.ZipSpider;
@@ -84,10 +85,12 @@ public class JmeterExecuteService {
                 jMeterService.run(runRequest);
                 FileUtils.deleteFile(bodyFile.getPath());
             } else {
+                PoolExecBlockingQueueUtil.offer(runRequest.getReportId());
                 MSException.throwException("未找到执行的JMX文件");
             }
         } catch (Exception e) {
             LoggerUtil.error(e.getMessage());
+            PoolExecBlockingQueueUtil.offer(runRequest.getReportId());
             return e.getMessage();
         }
         return "SUCCESS";
