@@ -45,7 +45,6 @@ public class ProducerService {
         KafkaTemplate kafkaTemplate = this.init(producerProps);
         if (kafkaTemplate != null) {
             kafkaTemplate.send(KafkaConfig.TOPICS, message);
-            kafkaTemplate.flush();
         }
     }
 

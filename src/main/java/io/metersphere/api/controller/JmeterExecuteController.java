@@ -1,6 +1,7 @@
 package io.metersphere.api.controller;
 
 import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
+import io.metersphere.api.jmeter.utils.JmeterThreadUtils;
 import io.metersphere.api.module.JvmInfo;
 import io.metersphere.api.service.JmeterExecuteService;
 import io.metersphere.api.service.JvmService;
@@ -30,11 +31,15 @@ public class JmeterExecuteController {
         return "当前报告 " + runRequest.getReportId() + " 正在执行中";
     }
 
+    @GetMapping("/get/running/queue/{reportId}")
+    public boolean getRunningQueue(@PathVariable String reportId) {
+        return JmeterThreadUtils.isRunning(reportId, null);
+    }
+
     @GetMapping("/status")
     public String getStatus() {
         return "OK";
     }
-
 
     @GetMapping("/getJvmInfo")
     public JvmInfo getJvmInfo() {
