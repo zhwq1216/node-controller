@@ -91,6 +91,7 @@ public class ExecThreadPoolExecutor {
         buffer.append(" 队列大小：" + (queue.size() + queue.remainingCapacity())).append("\n");
         buffer.append(" 当前排队线程数：" + (msRejectedExecutionHandler.getBufferQueue().size() + queue.size())).append("\n");
         buffer.append(" 队列剩余大小：" + queue.remainingCapacity()).append("\n");
+        buffer.append(" 阻塞队列大小：" + PoolExecBlockingQueueUtil.queue.size()).append("\n");
         buffer.append(" 队列使用度：" + divide(queue.size(), queue.size() + queue.remainingCapacity()));
 
         LoggerUtil.info(buffer.toString());
