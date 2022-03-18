@@ -13,8 +13,14 @@ pipeline {
         stage('Build/Test') {
             steps {
                 configFileProvider([configFile(fileId: 'metersphere-maven', targetLocation: 'settings.xml')]) {
-                    sh "./mvnw clean package --settings ./settings.xml"
-                    sh "mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)"
+                    sh '''
+                        export JAVA_HOME=/opt/jdk-11
+                        export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH
+                        export PATH=$JAVA_HOME/bin:$PATH
+                        java -version
+                        ./mvnw clean package --settings ./settings.xml
+                        mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+                    '''
                 }
             }
         }
