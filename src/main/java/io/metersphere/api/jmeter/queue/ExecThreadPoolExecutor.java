@@ -101,14 +101,16 @@ public class ExecThreadPoolExecutor {
         }
     }
 
-    public void setCorePoolSize(int corePoolSize) {
+    public void setCorePoolSize(int maximumPoolSize) {
         try {
-            if (corePoolSize != threadPool.getCorePoolSize()) {
+            int corePoolSize = maximumPoolSize > 500 ? 500 : maximumPoolSize;
+            if (corePoolSize > CORE_POOL_SIZE) {
                 threadPool.setCorePoolSize(corePoolSize);
-                threadPool.setMaximumPoolSize(corePoolSize);
-                threadPool.allowCoreThreadTimeOut(true);
-                LoggerUtil.info("AllCoreThreads: " + threadPool.prestartAllCoreThreads());
             }
+            threadPool.setCorePoolSize(corePoolSize);
+            threadPool.setMaximumPoolSize(maximumPoolSize);
+            threadPool.allowCoreThreadTimeOut(true);
+            LoggerUtil.info("AllCoreThreads: " + threadPool.prestartAllCoreThreads());
         } catch (Exception e) {
             LoggerUtil.error("设置线程参数异常：" + e);
         }
