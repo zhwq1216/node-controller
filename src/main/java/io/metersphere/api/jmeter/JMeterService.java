@@ -55,7 +55,7 @@ public class JMeterService {
                 FixedCapacityUtils.jmeterLogTask.put(runRequest.getReportId(), System.currentTimeMillis());
             }
             runRequest.setHashTree(testPlan);
-            JMeterBase.addSyncListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
+            JMeterBase.addBackendListener(runRequest, runRequest.getHashTree(), APISingleResultListener.class.getCanonicalName());
             LocalRunner runner = new LocalRunner(testPlan);
             runner.run(runRequest.getReportId());
         } catch (Exception e) {
