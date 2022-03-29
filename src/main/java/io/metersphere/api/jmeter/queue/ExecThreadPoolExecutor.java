@@ -97,7 +97,6 @@ public class ExecThreadPoolExecutor {
         buffer.append(" 队列使用度：" + divide(queue.size(), queue.size() + queue.remainingCapacity()));
 
         LoggerUtil.info(buffer.toString());
-
         if (queue.size() > 0 && LoggerUtil.getLogger().isDebugEnabled()) {
             LoggerUtil.debug(this.getWorkerQueue());
         }
