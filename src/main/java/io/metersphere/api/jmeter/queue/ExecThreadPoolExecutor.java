@@ -97,7 +97,6 @@ public class ExecThreadPoolExecutor {
         buffer.append(" 队列使用度：" + divide(queue.size(), queue.size() + queue.remainingCapacity()));
 
         LoggerUtil.info(buffer.toString());
-
         if (queue.size() > 0 && LoggerUtil.getLogger().isDebugEnabled()) {
             LoggerUtil.debug(this.getWorkerQueue());
         }
@@ -105,14 +104,16 @@ public class ExecThreadPoolExecutor {
 
     public void setCorePoolSize(int maximumPoolSize) {
         try {
-            int corePoolSize = maximumPoolSize > 500 ? 500 : maximumPoolSize;
-            if (corePoolSize > CORE_POOL_SIZE) {
+            if (maximumPoolSize != threadPool.getMaximumPoolSize()) {
+                int corePoolSize = maximumPoolSize > 500 ? 500 : maximumPoolSize;
+                if (corePoolSize > CORE_POOL_SIZE) {
+                    threadPool.setCorePoolSize(corePoolSize);
+                }
                 threadPool.setCorePoolSize(corePoolSize);
+                threadPool.setMaximumPoolSize(maximumPoolSize);
+                threadPool.allowCoreThreadTimeOut(true);
+                LoggerUtil.info("AllCoreThreads: " + threadPool.prestartAllCoreThreads());
             }
-            threadPool.setCorePoolSize(corePoolSize);
-            threadPool.setMaximumPoolSize(maximumPoolSize);
-            threadPool.allowCoreThreadTimeOut(true);
-            LoggerUtil.info("AllCoreThreads: " + threadPool.prestartAllCoreThreads());
         } catch (Exception e) {
             LoggerUtil.error("设置线程参数异常：" + e);
         }
