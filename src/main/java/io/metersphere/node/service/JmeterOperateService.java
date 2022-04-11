@@ -101,6 +101,7 @@ public class JmeterOperateService {
                         String oomMessage = "There is insufficient memory for the Java Runtime Environment to continue.";
                         String oomMessage2 = "Exception: java.lang.OutOfMemoryError thrown from the UncaughtExceptionHandler in thread";
                         if (StringUtils.contains(log, oomMessage) || StringUtils.contains(log, oomMessage2)) {
+                            LoggerUtil.info("oom");
                             // oom 退出
                             String[] contents = new String[]{reportId, "none", "0", oomMessage};
                             String message = StringUtils.join(contents, " ");
