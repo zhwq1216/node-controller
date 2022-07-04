@@ -44,14 +44,13 @@ public class MsApiBackendListener implements MsExecListener {
     public void testEnded(ResultDTO dto, Map<String, Object> kafkaConfig) {
         try {
             PoolExecBlockingQueueUtil.offer(dto.getReportId());
-
-            if (dto.isRetryEnable()) {
-                LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】开始");
-                RetryResultUtil.mergeRetryResults(queues);
-                LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】结束");
-            }
             // 整理执行结果
             JMeterBase.resultFormatting(queues, dto);
+            if (dto.isRetryEnable()) {
+                LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】开始");
+                RetryResultUtil.mergeRetryResults(dto.getRequestResults());
+                LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】结束");
+            }
             queues.clear();
 
             LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
