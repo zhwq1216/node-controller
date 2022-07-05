@@ -44,18 +44,15 @@ public class MsApiBackendListener implements MsExecListener {
     public void testEnded(ResultDTO dto, Map<String, Object> kafkaConfig) {
         try {
             PoolExecBlockingQueueUtil.offer(dto.getReportId());
+            if (StringUtils.isNotEmpty(dto.getReportId())) {
+                BlockingQueueUtil.remove(dto.getReportId());
+            }
             // 整理执行结果
             JMeterBase.resultFormatting(queues, dto);
             if (dto.isRetryEnable()) {
                 LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】开始");
                 RetryResultUtil.mergeRetryResults(dto.getRequestResults());
                 LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】结束");
-            }
-            queues.clear();
-
-            LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
-            if (StringUtils.isNotEmpty(dto.getReportId())) {
-                BlockingQueueUtil.remove(dto.getReportId());
             }
             dto.setConsole(FixedCapacityUtils.getJmeterLogger(dto.getReportId(), dto.getTestId()));
             if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
@@ -66,6 +63,7 @@ public class MsApiBackendListener implements MsExecListener {
                 dto.getArbitraryData().put("TEST_END", true);
             }
             FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
+            LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
             // 存储结果
             CommonBeanFactory.getBean(ProducerService.class).send(dto, kafkaConfig);
             LoggerUtil.info(JvmService.jvmInfo().toString());
