@@ -33,7 +33,7 @@ public class MsApiBackendListener implements MsExecListener {
 
     @Override
     public void handleTeardownTest(List<SampleResult> results, ResultDTO dto, Map<String, Object> kafkaConfig) {
-        LoggerUtil.info("开始处理单条执行结果报告【" + dto.getReportId() + " 】,资源【 " + dto.getTestId() + " 】");
+        LoggerUtil.info("开始处理单条执行结果报告", dto.getReportId());
         if (CollectionUtils.isNotEmpty(results)) {
             RetryResultUtil.clearLoops(results);
             queues.addAll(results);
@@ -50,9 +50,9 @@ public class MsApiBackendListener implements MsExecListener {
             // 整理执行结果
             JMeterBase.resultFormatting(queues, dto);
             if (dto.isRetryEnable()) {
-                LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】开始");
+                LoggerUtil.info("重试结果处理开始", dto.getReportId());
                 RetryResultUtil.mergeRetryResults(dto.getRequestResults());
-                LoggerUtil.info("重试结果处理【" + dto.getReportId() + " 】结束");
+                LoggerUtil.info("重试结果处理结束", dto.getReportId());
             }
             dto.setConsole(FixedCapacityUtils.getJmeterLogger(dto.getReportId(), dto.getTestId()));
             if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
@@ -63,12 +63,12 @@ public class MsApiBackendListener implements MsExecListener {
                 dto.getArbitraryData().put("TEST_END", true);
             }
             FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
-            LoggerUtil.info("报告【" + dto.getReportId() + " 】执行完成");
+            LoggerUtil.info("node整体执行完成", dto.getReportId());
             // 存储结果
             CommonBeanFactory.getBean(ProducerService.class).send(dto, kafkaConfig);
-            LoggerUtil.info(JvmService.jvmInfo().toString());
+            LoggerUtil.info(JvmService.jvmInfo().toString(), dto.getReportId());
         } catch (Exception e) {
-            LoggerUtil.error(e);
+            LoggerUtil.error("结果处理异常", dto.getReportId(), e);
         } finally {
             PoolExecBlockingQueueUtil.offer(dto.getReportId());
             if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
