@@ -18,5 +18,6 @@ target/
 *.ipr
 src/test/
 *.jar
+.flattened-pom.xml
 .mvn
 !.mvn/maven-wrapper.properties
