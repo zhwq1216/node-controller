@@ -41,9 +41,9 @@ pipeline {
                     sh '''
                         export JAVA_HOME=/opt/jdk-11
                         export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH
-                        export PATH=$JAVA_HOME/bin:/opt/mvnd/bin:$PATH
+                        export PATH=$JAVA_HOME/bin:$PATH
                         java -version
-                        mvnd clean package -Drevision=${REVISION} --settings ./settings.xml
+                        ./mvnw clean package -Drevision=${REVISION} --settings ./settings.xml
                         mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
                     '''
                 }
@@ -51,7 +51,7 @@ pipeline {
         }
         stage('Docker build & push') {
             steps {
-                sh '''
+                sh '''#!/bin/bash -e
                 su - metersphere -c "cd ${WORKSPACE} && docker buildx create --use && docker buildx build --build-arg MS_VERSION=\${TAG_NAME:-\$BRANCH_NAME}-\${GIT_COMMIT:0:8} -t ${IMAGE_PREFIX}/${IMAGE_NAME}:\${TAG_NAME:-\$BRANCH_NAME} --platform linux/amd64,linux/arm64 . --push"
                 '''
             }
