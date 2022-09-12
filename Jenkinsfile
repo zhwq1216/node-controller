@@ -17,7 +17,7 @@ pipeline {
         pollSCM('0 * * * *')
     }
     environment {
-        IMAGE_NAME = 'ms-node-controller'
+        IMAGE_NAME = 'node-controller'
         IMAGE_PREFIX = 'registry.cn-qingdao.aliyuncs.com/metersphere'
     }
     stages {
