@@ -17,6 +17,7 @@ pipeline {
         pollSCM('0 * * * *')
     }
     environment {
+        JAVA_HOME = '/opt/jdk-11'
         IMAGE_NAME = 'node-controller'
         IMAGE_PREFIX = 'registry.cn-qingdao.aliyuncs.com/metersphere'
     }
