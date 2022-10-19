@@ -158,9 +158,9 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
-        <File>${logging.file.path}/ms-jmeter-run-log.log</File>
+        <File>${logging.file.path}/ms-jmeter-run.log</File>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${logging.file.path}/history/ms-jmeter-run-log.%d{yyyyMMdd}-%i.log
+            <FileNamePattern>${logging.file.path}/history/ms-jmeter-run.%d{yyyyMMdd}-%i.log
             </FileNamePattern>
             <maxHistory>30</maxHistory>
             <TimeBasedFileNamingAndTriggeringPolicy
@@ -170,7 +170,7 @@
         </rollingPolicy>
         <encoder>
             <charset>UTF-8</charset>
-            <Pattern>%d [%thread] %-5level %logger{36} %line - %msg%n</Pattern>
+            <Pattern>%d %t %-5level %logger{36} %line - %msg%n</Pattern>
         </encoder>
     </appender>
     <appender name="runLogAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -180,7 +180,7 @@
         <queueSize>10000</queueSize>
         <appender-ref ref="apiRunLogAppender"/>
     </appender>
-    <logger name="ms-jmeter-run-log" additivity="false">
+    <logger name="ms-jmeter-run" additivity="false">
         <level value="${logger.level:INFO}"/>
         <appender-ref ref="runLogAppender"/>
     </logger>
@@ -199,7 +199,7 @@
         <appender-ref ref="errorAsyncAppender"/>
     </logger>
 
-    <logger name="io.metersphere.node.Application" additivity="false" level="${logger.level:INFO}">
+    <logger name="io.metersphere.Application" additivity="false" level="${logger.level:INFO}">
         <appender-ref ref="infoAsyncAppender"/>
     </logger>
 

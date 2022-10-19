@@ -4,10 +4,13 @@ import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
 import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
 import io.metersphere.api.jmeter.utils.JmeterProperties;
 import io.metersphere.api.jmeter.utils.MSException;
+import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.JmeterRunRequestDTO;
 import io.metersphere.jmeter.JMeterBase;
 import io.metersphere.jmeter.LocalRunner;
 import io.metersphere.utils.LoggerUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.jmeter.threads.ThreadGroup;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -48,12 +51,30 @@ public class JMeterService {
         }
     }
 
+    private String getReportId(HashTree tree, JmeterRunRequestDTO runRequest) {
+        if (StringUtils.equals(runRequest.getReportType(), RunModeConstants.SET_REPORT.toString())) {
+            String reportId = StringUtils.join(runRequest.getReportId(), "_", runRequest.getTestId());
+            for (Object key : tree.keySet()) {
+                HashTree node = tree.get(key);
+                if (key instanceof ThreadGroup) {
+                    ((ThreadGroup) key).setName(reportId);
+                    break;
+                } else {
+                    getReportId(node, runRequest);
+                }
+            }
+            return reportId;
+        } else {
+            return runRequest.getReportId();
+        }
+    }
+
     public void runLocal(JmeterRunRequestDTO runRequest, HashTree testPlan) {
         try {
             init();
-            String reportId = runRequest.getReportId() + "_" + runRequest.getTestId();
-            if (!FixedCapacityUtils.jmeterLogTask.containsKey(reportId)) {
-                FixedCapacityUtils.jmeterLogTask.put(reportId, System.currentTimeMillis());
+            String reportId = getReportId(runRequest.getHashTree(), runRequest);
+            if (!FixedCapacityUtils.containsKey(reportId)) {
+                FixedCapacityUtils.put(reportId, new StringBuffer(""));
             }
             runRequest.setHashTree(testPlan);
             JMeterBase.addBackendListener(runRequest, runRequest.getHashTree(), MsApiBackendListener.class.getCanonicalName());

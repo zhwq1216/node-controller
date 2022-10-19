@@ -1,21 +1,35 @@
 package io.metersphere.api.jmeter.utils;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import java.util.*;
 
 public class FixedCapacityUtils {
-    public static Map<Long, StringBuffer> fixedCapacityCache = Collections.synchronizedMap(new LRUHashMap<>());
-    public final static Map<String, Long> jmeterLogTask = new HashMap<>();
+    private static Map<String, StringBuffer> fixedCapacityCache = Collections.synchronizedMap(new LRUHashMap<>());
 
-    public static StringBuffer get(Long key) {
-        return fixedCapacityCache.get(key);
+    public static StringBuffer get(String key) {
+        if (containsKey(key)) {
+            return fixedCapacityCache.get(key);
+        }
+        return new StringBuffer("");
     }
 
-    public static void put(Long key, StringBuffer value) {
-        fixedCapacityCache.put(key, value);
+    public static boolean containsKey(String key) {
+        if (StringUtils.isEmpty(key)) {
+            return false;
+        }
+        return fixedCapacityCache.containsKey(key);
+    }
+
+    public static void put(String key, StringBuffer value) {
+        if (!fixedCapacityCache.containsKey(key)) {
+            fixedCapacityCache.put(key, value);
+        }
+    }
+
+    public static void remove(String key) {
+        if (fixedCapacityCache.containsKey(key)) {
+            fixedCapacityCache.remove(key);
+        }
     }
 
     public static int size() {
@@ -24,7 +38,7 @@ public class FixedCapacityUtils {
 
 
     static class LRUHashMap<K, V> extends LinkedHashMap<K, V> {
-        private int capacity = 100;
+        private int capacity = 3000;
 
         @Override
         protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
@@ -32,29 +46,13 @@ public class FixedCapacityUtils {
         }
     }
 
-
-    public static String getJmeterLogger(String reportId, String testId) {
-        String messageKey = reportId + "_" + testId;
+    public static String getJmeterLogger(String reportId) {
         try {
-            Long startTime = FixedCapacityUtils.jmeterLogTask.get(messageKey);
-            if (startTime == null) {
-                startTime = FixedCapacityUtils.jmeterLogTask.get("[" + messageKey + "]");
-            }
-            if (startTime == null) {
-                startTime = System.currentTimeMillis();
-            }
-            Long endTime = System.currentTimeMillis();
-            Long finalStartTime = startTime;
-            String logMessage = FixedCapacityUtils.fixedCapacityCache.entrySet().stream()
-                    .filter(map -> map.getKey() > finalStartTime && map.getKey() < endTime)
-                    .map(map -> map.getValue()).collect(Collectors.joining());
-            return logMessage;
+            return get(reportId).toString();
         } catch (Exception e) {
-            return "";
+            return StringUtils.EMPTY;
         } finally {
-            if (FixedCapacityUtils.jmeterLogTask.containsKey(messageKey)) {
-                FixedCapacityUtils.jmeterLogTask.remove(messageKey);
-            }
+            remove(reportId);
         }
     }
 }

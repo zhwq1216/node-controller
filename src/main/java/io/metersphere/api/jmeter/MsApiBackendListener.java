@@ -10,6 +10,7 @@ import io.metersphere.api.service.JvmService;
 import io.metersphere.api.service.ProducerService;
 import io.metersphere.cache.JMeterEngineCache;
 import io.metersphere.constants.BackendListenerConstants;
+import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.ResultDTO;
 import io.metersphere.jmeter.JMeterBase;
 import io.metersphere.utils.LoggerUtil;
@@ -65,7 +66,11 @@ public class MsApiBackendListener extends AbstractBackendListenerClient implemen
                 RetryResultUtil.mergeRetryResults(dto.getRequestResults());
                 LoggerUtil.info("重试结果处理结束", dto.getReportId());
             }
-            dto.setConsole(FixedCapacityUtils.getJmeterLogger(dto.getReportId(), dto.getTestId()));
+            String reportId = dto.getReportId();
+            if (StringUtils.equals(dto.getReportType(), RunModeConstants.SET_REPORT.toString())) {
+                reportId = StringUtils.join(dto.getReportId(), "_", dto.getTestId());
+            }
+            dto.setConsole(FixedCapacityUtils.getJmeterLogger(reportId));
             if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
                 dto.setArbitraryData(new HashMap<String, Object>() {{
                     this.put("TEST_END", true);
