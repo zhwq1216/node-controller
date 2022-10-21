@@ -15,11 +15,13 @@ public class ExecThreadPoolExecutor {
     // 线程池维护线程的最少数量
     private final static int CORE_POOL_SIZE = 10;
     // 线程池维护线程的最大数量
-    private final static int MAX_POOL_SIZE = 10;
+    private final static int DEFAULT_MAX_POOL_SIZE = 10;
     // 线程池维护线程所允许的空闲时间
     private final static int KEEP_ALIVE_TIME = 1;
     // 线程池所使用的缓冲队列大小
     private final static int WORK_QUEUE_SIZE = 10000;
+
+    private final static int MAX_POOL_SIZE = 1000;
 
     private MsRejectedExecutionHandler msRejectedExecutionHandler = new MsRejectedExecutionHandler();
     /**
@@ -27,7 +29,7 @@ public class ExecThreadPoolExecutor {
      */
     private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(
             CORE_POOL_SIZE,
-            MAX_POOL_SIZE,
+            DEFAULT_MAX_POOL_SIZE,
             KEEP_ALIVE_TIME,
             TimeUnit.SECONDS,
             new ArrayBlockingQueue(WORK_QUEUE_SIZE),
@@ -104,12 +106,13 @@ public class ExecThreadPoolExecutor {
 
     public void setCorePoolSize(int maximumPoolSize) {
         try {
-            if (maximumPoolSize != threadPool.getMaximumPoolSize()) {
+            if (maximumPoolSize <= MAX_POOL_SIZE && maximumPoolSize != threadPool.getMaximumPoolSize()) {
                 threadPool.setMaximumPoolSize(maximumPoolSize);
                 threadPool.setCorePoolSize(maximumPoolSize);
                 threadPool.allowCoreThreadTimeOut(true);
-                LoggerUtil.info("AllCoreThreads: " + threadPool.prestartAllCoreThreads());
+                LoggerUtil.info("set successfully  " + threadPool.prestartAllCoreThreads());
             }
+            LoggerUtil.info("The number of concurrent settings is too large: " + threadPool.getMaximumPoolSize());
         } catch (Exception e) {
             LoggerUtil.error("设置线程参数异常", e);
         }
