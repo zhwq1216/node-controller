@@ -42,7 +42,7 @@ public class JmeterExecuteController {
         return "OK";
     }
 
-    @GetMapping("/getJvmInfo")
+    @GetMapping("/get-jvm-info")
     public JvmInfo getJvmInfo() {
         return JvmService.jvmInfo();
     }
