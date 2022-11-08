@@ -1,9 +1,10 @@
 package io.metersphere.api.jmeter.utils;
 
 import org.apache.commons.lang3.StringUtils;
+
 import java.util.*;
 
-public class FixedCapacityUtils {
+public class FixedCapacityUtil {
     private static Map<String, StringBuffer> fixedCapacityCache = Collections.synchronizedMap(new LRUHashMap<>());
 
     public static StringBuffer get(String key) {
@@ -46,13 +47,15 @@ public class FixedCapacityUtils {
         }
     }
 
-    public static String getJmeterLogger(String reportId) {
+    public static String getJmeterLogger(String reportId, boolean isRemove) {
         try {
             return get(reportId).toString();
         } catch (Exception e) {
             return StringUtils.EMPTY;
         } finally {
-            remove(reportId);
+            if (isRemove) {
+                remove(reportId);
+            }
         }
     }
 }

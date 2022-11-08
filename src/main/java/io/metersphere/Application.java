@@ -1,7 +1,7 @@
 package io.metersphere;
 
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
-import io.metersphere.api.jmeter.utils.JmeterProperties;
+import io.metersphere.api.jmeter.utils.JMeterProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @ServletComponentScan
 @EnableConfigurationProperties({
-        JmeterProperties.class,
+        JMeterProperties.class,
 })
 @PropertySource(value = {
         "classpath:/base.properties",

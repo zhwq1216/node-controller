@@ -1,15 +1,20 @@
 package io.metersphere.api.service;
 
-import com.alibaba.fastjson.JSON;
+import io.metersphere.api.jmeter.ExtendedParameter;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.MsDriverManager;
 import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
+import io.metersphere.api.jmeter.utils.URLParserUtil;
+import io.metersphere.api.service.utils.BodyFile;
+import io.metersphere.api.service.utils.BodyFileRequest;
 import io.metersphere.api.service.utils.ZipSpider;
 import io.metersphere.dto.JmeterRunRequestDTO;
+import io.metersphere.utils.JsonUtils;
 import io.metersphere.utils.LoggerUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.save.SaveService;
@@ -19,10 +24,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class JMeterExecuteService {
@@ -39,9 +49,8 @@ public class JMeterExecuteService {
                 return "KAFKA 初始化失败，请检查配置";
             }
             // 生成附件/JAR文件
-            URL urlObject = new URL(runRequest.getPlatformUrl());
-            String jarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/jar";
-            String plugJarUrl = urlObject.getProtocol() + "://" + urlObject.getHost() + (urlObject.getPort() > 0 ? ":" + urlObject.getPort() : "") + "/api/jmeter/download/plug/jar";
+            String jarUrl = URLParserUtil.getJarURL(runRequest.getPlatformUrl());
+            String plugJarUrl = URLParserUtil.getPluginURL(runRequest.getPlatformUrl());
             LoggerUtil.info("开始同步上传的JAR：" + jarUrl);
             MsDriverManager.downloadJar(runRequest, jarUrl);
 
@@ -57,6 +66,10 @@ public class JMeterExecuteService {
             JMeterRunContext.getContext().setEnable(runRequest.isEnable());
 
             LoggerUtil.info("开始拉取脚本和脚本附件：" + runRequest.getPlatformUrl(), runRequest.getReportId());
+            if (runRequest.getHashTree() != null) {
+                jMeterService.run(runRequest);
+                return "SUCCESS";
+            }
             File bodyFile = ZipSpider.downloadFile(runRequest.getPlatformUrl(), FileUtils.BODY_FILE_DIR);
             if (bodyFile != null) {
                 ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
@@ -65,7 +78,7 @@ public class JMeterExecuteService {
                 // 生成执行脚本
                 HashTree testPlan = SaveService.loadTree(jmxFile);
                 TestPlan test = (TestPlan) testPlan.getArray()[0];
-                test.setProperty("JAR_PATH", JSON.toJSONString(MsDriverManager.loadJar(runRequest)));
+                test.setProperty("JAR_PATH", JsonUtils.toJSONString(MsDriverManager.loadJar(runRequest)));
                 // 开始执行
                 runRequest.setHashTree(testPlan);
                 LoggerUtil.info("开始加入队列执行", runRequest.getReportId());
@@ -127,6 +140,42 @@ public class JMeterExecuteService {
         }
     }
 
+    public String debug(JmeterRunRequestDTO runRequest) {
+        try {
+            if (runRequest == null || (MapUtils.isNotEmpty(runRequest.getExtendedParameters())
+                    && !runRequest.getExtendedParameters().containsKey(ExtendedParameter.JMX))) {
+                LoggerUtil.info("执行文件为空，无法执行", runRequest.getReportId());
+                return "执行文件为空，无法执行！";
+            }
+            if (MapUtils.isEmpty(runRequest.getExtendedParameters())) {
+                runRequest.setExtendedParameters(Map.of(LoggerUtil.DEBUG, true));
+            } else {
+                runRequest.getExtendedParameters().put(LoggerUtil.DEBUG, true);
+            }
+            InputStream inputSource = getStrToStream(runRequest.getExtendedParameters().get(ExtendedParameter.JMX).toString());
+            runRequest.setHashTree(JMeterService.getHashTree(SaveService.loadElement(inputSource)));
+            runRequest.getExtendedParameters().remove(ExtendedParameter.JMX);
+            runRequest.setDebug(true);
+            List<BodyFile> files = new ArrayList<>();
+            FileUtils.getFiles(runRequest.getHashTree(), files);
+            if (CollectionUtils.isNotEmpty(files)) {
+                LoggerUtil.info("获取到附件文件", JsonUtils.toJSONString(files));
+                String uri = URLParserUtil.getDownFileURL(runRequest.getPlatformUrl());
+                BodyFileRequest request = new BodyFileRequest(runRequest.getReportId(), files);
+                File bodyFile = ZipSpider.downloadFile(uri, request, FileUtils.BODY_FILE_DIR);
+                if (bodyFile != null) {
+                    runRequest.getExtendedParameters().put(ExtendedParameter.JMX_FILES, files);
+                    ZipSpider.unzip(bodyFile.getPath(), FileUtils.BODY_FILE_DIR);
+                    FileUtils.deleteFile(bodyFile.getPath());
+                }
+            }
+            return this.runStart(runRequest);
+        } catch (Exception e) {
+            LoggerUtil.error(e);
+            return e.getMessage();
+        }
+    }
+
     @Scheduled(cron = "0 0/5 * * * ?")
     public void execute() {
         if (JMeterRunContext.getContext().isEnable() && MapUtils.isNotEmpty(JMeterRunContext.getContext().getProjectUrls())) {
@@ -141,5 +190,18 @@ public class JMeterExecuteService {
                 this.loadPlugJar(FileUtils.JAR_PLUG_FILE_DIR);
             }
         }
+    }
+
+    private static InputStream getStrToStream(String sInputString) {
+        if (StringUtils.isNotEmpty(sInputString)) {
+            try {
+                ByteArrayInputStream tInputStringStream = new ByteArrayInputStream(sInputString.getBytes());
+                return tInputStringStream;
+            } catch (Exception ex) {
+                LoggerUtil.error(ex);
+                MSException.throwException("生成脚本异常");
+            }
+        }
+        return null;
     }
 }

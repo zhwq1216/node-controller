@@ -4,7 +4,7 @@ import io.metersphere.api.jmeter.queue.ExecThreadPoolExecutor;
 import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import org.apache.commons.lang3.StringUtils;
 
-public class JmeterThreadUtils {
+public class JMeterThreadUtil {
     public static boolean isRunning(String reportId, String testId) {
         if (StringUtils.isEmpty(reportId)) {
             return false;

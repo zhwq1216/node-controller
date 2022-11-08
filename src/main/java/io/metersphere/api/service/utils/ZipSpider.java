@@ -1,11 +1,14 @@
 package io.metersphere.api.service.utils;
 
+import io.metersphere.utils.JsonUtils;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Consts;
 import org.apache.jmeter.config.CSVDataSet;
 import org.apache.jmeter.protocol.http.sampler.HTTPSamplerProxy;
 import org.apache.jmeter.protocol.http.util.HTTPFileArg;
 import org.apache.jorphan.collections.HashTree;
+import org.springframework.http.HttpMethod;
 
 import javax.net.ssl.*;
 import java.io.*;
@@ -189,5 +192,55 @@ public class ZipSpider {
             }
         }
         return null;
+    }
+
+    public static File downloadFile(String urlPath, BodyFileRequest request, String downloadDir) {
+        File file = null;
+        try {
+            URL url = new URL(urlPath);//创建连接
+            URLConnection urlConnection = url.openConnection();
+            boolean useHttps = urlPath.startsWith("https");
+            if (useHttps) {
+                LoggerUtil.info("进入HTTPS协议处理方法");
+                HttpsURLConnection https = (HttpsURLConnection) urlConnection;
+                trustAllHosts(https);
+                https.setHostnameVerifier(DO_NOT_VERIFY);
+            }
+            HttpURLConnection connection = (HttpURLConnection) urlConnection;
+            connection.setRequestMethod(HttpMethod.POST.name());
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
+            connection.setUseCaches(false);//POST请求不能使用缓存（POST不能被缓存）
+            connection.setRequestProperty("Connection", "Keep-Alive");
+            connection.setInstanceFollowRedirects(true);//设置只作用于当前的实例
+            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            connection.setConnectTimeout(20 * 1000);//设置连接主机超时（单位：毫秒）
+            connection.setReadTimeout(20 * 1000);//设置从主机读取数据超时（单位：毫秒）
+            connection.connect();
+
+            OutputStream outputStream = connection.getOutputStream();
+            byte[] t = JsonUtils.toJSONString(request).getBytes(Consts.UTF_8);
+            outputStream.write(t);
+            outputStream.flush();
+            outputStream.close();
+            // 写文件
+            String fileName = connection.getHeaderField("Content-Disposition");
+            fileName = URLDecoder.decode(fileName.substring(fileName.indexOf("filename") + 10, fileName.length() - 1), Consts.UTF_8);
+            String path = downloadDir + File.separatorChar + fileName;// 指定存放位置
+            file = new File(path);
+            OutputStream out = new FileOutputStream(file);
+            BufferedInputStream bin = new BufferedInputStream(connection.getInputStream());
+            int size = 0;
+            byte[] b = new byte[2048];
+            //把输入流的文件读取到字节数据b中，然后输出到指定目录的文件
+            while ((size = bin.read(b)) != -1) {
+                out.write(b, 0, size);
+            }
+            out.close();
+            bin.close();
+        } catch (Exception e) {
+            LoggerUtil.error(e);
+        }
+        return file;
     }
 }

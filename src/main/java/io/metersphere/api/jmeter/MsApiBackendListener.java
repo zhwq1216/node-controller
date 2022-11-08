@@ -1,11 +1,10 @@
 package io.metersphere.api.jmeter;
 
-import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.queue.BlockingQueueUtil;
 import io.metersphere.api.jmeter.queue.PoolExecBlockingQueueUtil;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
 import io.metersphere.api.jmeter.utils.FileUtils;
-import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
+import io.metersphere.api.jmeter.utils.FixedCapacityUtil;
 import io.metersphere.api.service.JvmService;
 import io.metersphere.api.service.ProducerService;
 import io.metersphere.cache.JMeterEngineCache;
@@ -13,6 +12,7 @@ import io.metersphere.constants.BackendListenerConstants;
 import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.ResultDTO;
 import io.metersphere.jmeter.JMeterBase;
+import io.metersphere.utils.JsonUtils;
 import io.metersphere.utils.LoggerUtil;
 import io.metersphere.utils.RetryResultUtil;
 import org.apache.commons.collections.CollectionUtils;
@@ -70,13 +70,13 @@ public class MsApiBackendListener extends AbstractBackendListenerClient implemen
             if (StringUtils.equals(dto.getReportType(), RunModeConstants.SET_REPORT.toString())) {
                 reportId = StringUtils.join(dto.getReportId(), "_", dto.getTestId());
             }
-            dto.setConsole(FixedCapacityUtils.getJmeterLogger(reportId));
+            dto.setConsole(FixedCapacityUtil.getJmeterLogger(reportId,true));
             if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
                 dto.setArbitraryData(new HashMap<String, Object>() {{
-                    this.put("TEST_END", true);
+                    this.put(ExtendedParameter.TEST_END, true);
                 }});
             } else {
-                dto.getArbitraryData().put("TEST_END", true);
+                dto.getArbitraryData().put(ExtendedParameter.TEST_END, true);
             }
             FileUtils.deleteFile(FileUtils.BODY_FILE_DIR + "/" + dto.getReportId() + "_" + dto.getTestId() + ".jmx");
             LoggerUtil.info("node整体执行完成", dto.getReportId());
@@ -116,14 +116,14 @@ public class MsApiBackendListener extends AbstractBackendListenerClient implemen
         this.producerProps = new HashMap<>();
 
         if (StringUtils.isNotEmpty(context.getParameter(BackendListenerConstants.KAFKA_CONFIG.name()))) {
-            this.producerProps = JSON.parseObject(context.getParameter(BackendListenerConstants.KAFKA_CONFIG.name()), Map.class);
+            this.producerProps = JsonUtils.parseObject(context.getParameter(BackendListenerConstants.KAFKA_CONFIG.name()), Map.class);
         }
         dto.setQueueId(context.getParameter(BackendListenerConstants.QUEUE_ID.name()));
         dto.setRunType(context.getParameter(BackendListenerConstants.RUN_TYPE.name()));
 
         String ept = context.getParameter(BackendListenerConstants.EPT.name());
         if (StringUtils.isNotEmpty(ept)) {
-            dto.setExtendedParameters(JSON.parseObject(context.getParameter(BackendListenerConstants.EPT.name()), Map.class));
+            dto.setExtendedParameters(JsonUtils.parseObject(ept, Map.class));
         }
     }
 }

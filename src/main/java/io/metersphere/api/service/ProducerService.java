@@ -1,12 +1,14 @@
 package io.metersphere.api.service;
 
-import com.alibaba.fastjson.JSON;
+import io.metersphere.api.jmeter.ExtendedParameter;
+import io.metersphere.api.jmeter.dto.MsgDTO;
 import io.metersphere.api.service.utils.ResultConversionUtil;
 import io.metersphere.config.KafkaConfig;
 import io.metersphere.constants.RunModeConstants;
 import io.metersphere.dto.JmeterRunRequestDTO;
 import io.metersphere.dto.RequestResult;
 import io.metersphere.dto.ResultDTO;
+import io.metersphere.utils.JsonUtils;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -25,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ProducerService {
     // 初始化不同地址kafka,每个地址初始化一个线程
     private Map<String, KafkaTemplate> kafkaTemplateMap = new ConcurrentHashMap<>();
+    public static final String DEBUG_TOPICS_KEY = "MS-API-DEBUG-KEY";
 
     public KafkaTemplate init(Map<String, Object> producerProps) {
         try {
@@ -54,10 +57,10 @@ public class ProducerService {
         dto.setRequestResults(new LinkedList<>());
         if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
             dto.setArbitraryData(new HashMap<String, Object>() {{
-                this.put("TEST_END", true);
+                this.put(ExtendedParameter.TEST_END, true);
             }});
         } else {
-            dto.getArbitraryData().put("TEST_END", true);
+            dto.getArbitraryData().put(ExtendedParameter.TEST_END, true);
         }
         this.send(dto, runRequest.getKafkaConfig());
     }
@@ -69,16 +72,23 @@ public class ProducerService {
         }
     }
 
+    public void sendDebug(String key, MsgDTO dto, Map<String, Object> producerProps) {
+        KafkaTemplate kafkaTemplate = this.init(producerProps);
+        if (kafkaTemplate != null && producerProps.containsKey(DEBUG_TOPICS_KEY)) {
+            kafkaTemplate.send(producerProps.get(DEBUG_TOPICS_KEY).toString(), key, JsonUtils.toJSONString(dto));
+        }
+    }
+
     public void send(ResultDTO dto, Map<String, Object> kafkaConfig) {
         try {
             LoggerUtil.info("执行完成开始同步发送KAFKA" + dto.getRequestResults().size(), dto.getReportId());
-            this.send(dto.getReportId(), JSON.toJSONString(dto), kafkaConfig);
+            this.send(dto.getReportId(), JsonUtils.toJSONString(dto), kafkaConfig);
             LoggerUtil.info("同步发送报告信息到KAFKA完成", dto.getReportId());
         } catch (Exception ex) {
             LoggerUtil.error("KAFKA 推送结果异常", dto.getReportId(), ex);
             // 尝试逐条发送
             if (dto != null && CollectionUtils.isNotEmpty(dto.getRequestResults())) {
-                dto.getArbitraryData().put("REPORT_STATUS", ResultConversionUtil.getStatus(dto));
+                dto.getArbitraryData().put(ExtendedParameter.REPORT_STATUS, ResultConversionUtil.getStatus(dto));
                 StringBuffer logMsg = new StringBuffer(dto.getConsole())
                         .append("\n")
                         .append("KAFKA推送结果异常：[" + dto.getReportId() + "]")
@@ -92,7 +102,7 @@ public class ProducerService {
                         resultDTO.setRequestResults(new LinkedList<RequestResult>() {{
                             this.add(item);
                         }});
-                        this.send(dto.getReportId(), JSON.toJSONString(resultDTO), kafkaConfig);
+                        this.send(dto.getReportId(), JsonUtils.toJSONString(resultDTO), kafkaConfig);
                     }
                 });
             }

@@ -1,11 +1,11 @@
 package io.metersphere.api.jmeter;
 
-import com.alibaba.fastjson.JSON;
 import io.metersphere.api.jmeter.utils.FileUtils;
 import io.metersphere.api.jmeter.utils.MSException;
 import io.metersphere.api.service.JMeterRunContext;
 import io.metersphere.api.service.utils.ZipSpider;
 import io.metersphere.dto.JmeterRunRequestDTO;
+import io.metersphere.utils.JsonUtils;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,7 +21,7 @@ public class MsDriverManager {
         List<String> jarPaths = new ArrayList<>();
         try {
             if (runRequest.getExtendedParameters() != null && runRequest.getExtendedParameters().containsKey(PROJECT_ID)) {
-                List<String> projectIds = JSON.parseObject(runRequest.getExtendedParameters().get(PROJECT_ID).toString(), List.class);
+                List<String> projectIds = JsonUtils.parseObject(runRequest.getExtendedParameters().get(PROJECT_ID).toString(), List.class);
                 projectIds.forEach(projectId -> {
                     File file = new File(StringUtils.join(FileUtils.PROJECT_JAR_FILE_DIR, "/", projectId + "/"));
                     if (file.isFile()) {
@@ -48,7 +48,7 @@ public class MsDriverManager {
 
     public static void downloadJar(JmeterRunRequestDTO runRequest, String jarUrl) {
         if (runRequest.getExtendedParameters() != null && runRequest.getExtendedParameters().containsKey(PROJECT_ID)) {
-            List<String> projectIds = JSON.parseObject(runRequest.getExtendedParameters().get(PROJECT_ID).toString(), List.class);
+            List<String> projectIds = JsonUtils.parseObject(runRequest.getExtendedParameters().get(PROJECT_ID).toString(), List.class);
             for (String projectId : projectIds) {
                 if (JMeterRunContext.getContext().isEnable() && JMeterRunContext.getContext().getProjectUrls().containsKey(projectId)) {
                     continue;

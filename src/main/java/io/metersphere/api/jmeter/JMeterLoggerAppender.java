@@ -4,7 +4,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import io.metersphere.api.jmeter.utils.DateUtils;
-import io.metersphere.api.jmeter.utils.FixedCapacityUtils;
+import io.metersphere.api.jmeter.utils.FixedCapacityUtil;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,8 +36,8 @@ public class JMeterLoggerAppender extends UnsynchronizedAppenderBase<ILoggingEve
                     }
                 }
                 if (message != null && !message.toString().contains("java.net.UnknownHostException")
-                        && FixedCapacityUtils.containsKey(threadName)) {
-                    FixedCapacityUtils.get(threadName).append(message);
+                        && FixedCapacityUtil.containsKey(threadName)) {
+                    FixedCapacityUtil.get(threadName).append(message);
                 }
                 if (!enable) {
                     logger.info("JMETER-LOG ", message);

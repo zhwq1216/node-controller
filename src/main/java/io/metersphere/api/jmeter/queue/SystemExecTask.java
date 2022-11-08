@@ -1,8 +1,9 @@
 package io.metersphere.api.jmeter.queue;
 
+import io.metersphere.api.jmeter.ExtendedParameter;
 import io.metersphere.api.jmeter.JMeterService;
 import io.metersphere.api.jmeter.utils.CommonBeanFactory;
-import io.metersphere.api.jmeter.utils.JmeterThreadUtils;
+import io.metersphere.api.jmeter.utils.JMeterThreadUtil;
 import io.metersphere.api.service.ProducerService;
 import io.metersphere.cache.JMeterEngineCache;
 import io.metersphere.dto.JmeterRunRequestDTO;
@@ -30,17 +31,17 @@ public class SystemExecTask implements Runnable {
         CommonBeanFactory.getBean(JMeterService.class).addQueue(request);
         if (StringUtils.isNotEmpty(request.getReportId())) {
             Object res = PoolExecBlockingQueueUtil.take(request.getReportId());
-            if (res == null && !JmeterThreadUtils.isRunning(request.getReportId(), request.getTestId())) {
+            if (res == null && !JMeterThreadUtil.isRunning(request.getReportId(), request.getTestId())) {
                 LoggerUtil.info("任务执行超时", request.getReportId());
                 ResultDTO dto = new ResultDTO();
                 BeanUtils.copyProperties(dto, request);
                 if (dto.getArbitraryData() == null || dto.getArbitraryData().isEmpty()) {
                     dto.setArbitraryData(new HashMap<String, Object>() {{
-                        this.put("TEST_END", true);
+                        this.put(ExtendedParameter.TEST_END, true);
                         this.put("TIMEOUT", true);
                     }});
                 } else {
-                    dto.getArbitraryData().put("TEST_END", true);
+                    dto.getArbitraryData().put(ExtendedParameter.TEST_END, true);
                     dto.getArbitraryData().put("TIMEOUT", true);
                 }
                 if (JMeterEngineCache.runningEngine.containsKey(dto.getReportId())) {
