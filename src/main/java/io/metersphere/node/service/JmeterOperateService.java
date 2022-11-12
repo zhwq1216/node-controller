@@ -38,7 +38,7 @@ public class JmeterOperateService {
     public void startContainer(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
         String testId = env.get("TEST_ID");
-        LoggerUtil.info("Receive start container request, test id: {}", testId);
+        LoggerUtil.info("Receive start container request, test id: " + testId);
         String bootstrapServers = env.get("BOOTSTRAP_SERVERS");
         // 检查kafka连通性
         checkKafka(bootstrapServers);
@@ -219,7 +219,7 @@ public class JmeterOperateService {
 
 
     public void stopContainer(String testId) {
-        LoggerUtil.info("Receive stop container request, test: {}", testId);
+        LoggerUtil.info("Receive stop container request, test: " + testId);
         DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter
@@ -243,7 +243,7 @@ public class JmeterOperateService {
     }
 
     public String logContainer(String testId) {
-        LoggerUtil.info("Receive logs container request, test: {}", testId);
+        LoggerUtil.info("Receive logs container request, test: " + testId);
         DockerClient dockerClient = DockerClientService.connectDocker();
 
         // container filter

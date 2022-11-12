@@ -2,7 +2,10 @@ package io.metersphere.node.util;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.model.*;
+import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Volume;
+import com.github.dockerjava.api.model.VolumesFrom;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.node.controller.request.DockerLoginRequest;
@@ -11,7 +14,6 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -156,17 +158,6 @@ public class DockerClientService {
                 .withIdFilter(Collections.singleton(containerId))
                 .exec();
         return list.size();
-    }
-
-    public static void createVolume(DockerClient dockerClient, String reportId, String name) {
-        dockerClient.createVolumeCmd()
-                .withName(reportId + "_" + name)
-                .withDriverOpts(new HashMap<>() {{
-                    put("type", "none");
-                    put("device", "/Users/liuruibin/git_workspace/metersphere/node-controller/" + reportId + "/" + name);
-                    put("o", "bind");
-                }})
-                .exec();
     }
 
     private static String[] getEnvs(TestRequest testRequest) {
