@@ -164,7 +164,7 @@ public class DockerClientService {
         Map<String, String> env = testRequest.getEnv();
         env.put("REPORT_REALTIME", System.getenv().getOrDefault("REPORT_REALTIME", "true"));
         env.put("REPORT_FINAL", System.getenv().getOrDefault("REPORT_FINAL", "true"));
-        env.put("SPLIT_FILE_SIZE", System.getenv().getOrDefault("SPLIT_FILE_SIZE","100000"));
+        env.put("SPLIT_FILE_SIZE", System.getenv().getOrDefault("SPLIT_FILE_SIZE","500000"));
         return env.keySet().stream().map(k -> k + "=" + env.get(k)).toArray(String[]::new);
     }
 }
