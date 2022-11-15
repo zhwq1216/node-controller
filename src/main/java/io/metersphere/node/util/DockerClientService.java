@@ -23,9 +23,9 @@ import java.util.Map;
 @Service
 public class DockerClientService {
 
-    @Value("${jmeter.cpu.set}")
+    @Value("${jmeter.cpu.set:}")
     private String jmeterCores;
-    @Value("${report.cpu.set}")
+    @Value("${report.cpu.set:}")
     private String reportCores;
     @Value("${report.realtime:true}")
     private boolean reportRealtime;
@@ -54,9 +54,6 @@ public class DockerClientService {
                     reportCores = "0-1";
                 }
             }
-        } else {
-            jmeterCores = "";
-            reportCores = "";
         }
     }
 
