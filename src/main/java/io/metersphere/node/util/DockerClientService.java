@@ -12,25 +12,31 @@ import io.metersphere.node.controller.request.DockerLoginRequest;
 import io.metersphere.node.controller.request.TestRequest;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Service
 public class DockerClientService {
 
-    private static final String jmeterCores;
-    private static final String reportCores;
+    @Value("${jmeter.cpu.set}")
+    private String jmeterCores;
+    @Value("${report.cpu.set}")
+    private String reportCores;
+    @Value("${report.realtime:true}")
+    private boolean reportRealtime;
+    @Value("${report.final:true}")
+    private boolean reportFinal;
+    @Value("${split.file.size:500000}")
+    private long splitFileSize;
 
-    static {
-        String jmeterCpuSet = System.getenv("JMETER_CPU_SET");
-        String reportCpuSet = System.getenv("REPORT_CPU_SET");
-        boolean reportRealtime = BooleanUtils.toBoolean(System.getenv().getOrDefault("REPORT_REALTIME", "true"));
-        boolean reportFinal = BooleanUtils.toBoolean(System.getenv().getOrDefault("REPORT_FINAL", "true"));
-        if (StringUtils.isNotBlank(jmeterCpuSet) && StringUtils.isNotBlank(reportCpuSet)) {
-            jmeterCores = jmeterCpuSet;
-            reportCores = reportCpuSet;
-        } else {
+    @PostConstruct
+    public void init() {
+        if (StringUtils.isBlank(jmeterCores) || StringUtils.isBlank(jmeterCores)) {
             int cores = Runtime.getRuntime().availableProcessors();
             if (cores >= 4) {
                 int lastIndex = cores - 1;
@@ -47,10 +53,10 @@ public class DockerClientService {
                     jmeterCores = "2-" + lastIndex;
                     reportCores = "0-1";
                 }
-            } else {
-                jmeterCores = "";
-                reportCores = "";
             }
+        } else {
+            jmeterCores = "";
+            reportCores = "";
         }
     }
 
@@ -59,11 +65,11 @@ public class DockerClientService {
      *
      * @return
      */
-    public static DockerClient connectDocker() {
+    public DockerClient connectDocker() {
         return DockerClientBuilder.getInstance().build();
     }
 
-    public static DockerClient connectDocker(DockerLoginRequest request) {
+    public DockerClient connectDocker(DockerLoginRequest request) {
         if (StringUtils.isBlank(request.getRegistry()) || StringUtils.isBlank(request.getUsername()) || StringUtils.isBlank(request.getPassword())) {
             return connectDocker();
         }
@@ -81,7 +87,7 @@ public class DockerClientService {
      * @param client
      * @return
      */
-    public static CreateContainerResponse createContainers(DockerClient client, TestRequest request, String testId, String imageName) {
+    public CreateContainerResponse createContainers(DockerClient client, TestRequest request, String testId, String imageName) {
 
         // 创建 hostConfig
         HostConfig hostConfig = HostConfig.newHostConfig()
@@ -97,7 +103,7 @@ public class DockerClientService {
         return container;
     }
 
-    public static CreateContainerResponse createReportContainers(DockerClient client, TestRequest request, String testId, String imageName) {
+    public CreateContainerResponse createReportContainers(DockerClient client, TestRequest request, String testId, String imageName) {
         // 创建 hostConfig
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withNetworkMode("host")
@@ -119,7 +125,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public static void startContainer(DockerClient client, String containerId) {
+    public void startContainer(DockerClient client, String containerId) {
         client.startContainerCmd(containerId).exec();
     }
 
@@ -129,7 +135,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public static void stopContainer(DockerClient client, String containerId) {
+    public void stopContainer(DockerClient client, String containerId) {
         client.stopContainerCmd(containerId).exec();
     }
 
@@ -139,7 +145,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public static void removeContainer(DockerClient client, String containerId) {
+    public void removeContainer(DockerClient client, String containerId) {
         client.removeContainerCmd(containerId)
                 .withForce(true)
                 .withRemoveVolumes(true)
@@ -152,7 +158,7 @@ public class DockerClientService {
      * @param client
      * @param containerId
      */
-    public static int existContainer(DockerClient client, String containerId) {
+    public int existContainer(DockerClient client, String containerId) {
         List<Container> list = client.listContainersCmd()
                 .withShowAll(true)
                 .withIdFilter(Collections.singleton(containerId))
@@ -160,11 +166,11 @@ public class DockerClientService {
         return list.size();
     }
 
-    private static String[] getEnvs(TestRequest testRequest) {
+    private String[] getEnvs(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
-        env.put("REPORT_REALTIME", System.getenv().getOrDefault("REPORT_REALTIME", "true"));
-        env.put("REPORT_FINAL", System.getenv().getOrDefault("REPORT_FINAL", "true"));
-        env.put("SPLIT_FILE_SIZE", System.getenv().getOrDefault("SPLIT_FILE_SIZE","500000"));
+        env.put("REPORT_REALTIME", BooleanUtils.toStringTrueFalse(reportRealtime));
+        env.put("REPORT_FINAL", BooleanUtils.toStringTrueFalse(reportFinal));
+        env.put("SPLIT_FILE_SIZE", String.valueOf(splitFileSize));
         return env.keySet().stream().map(k -> k + "=" + env.get(k)).toArray(String[]::new);
     }
 }

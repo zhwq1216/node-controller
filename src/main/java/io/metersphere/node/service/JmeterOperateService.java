@@ -34,6 +34,8 @@ import java.util.zip.ZipOutputStream;
 public class JmeterOperateService {
     @Resource
     private KafkaProducerService kafkaProducerService;
+    @Resource
+    private DockerClientService dockerClientService;
 
     public void startContainer(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
@@ -45,7 +47,7 @@ public class JmeterOperateService {
         // 初始化kafka
         kafkaProducerService.init(bootstrapServers);
 
-        DockerClient dockerClient = DockerClientService.connectDocker(testRequest);
+        DockerClient dockerClient = dockerClientService.connectDocker(testRequest);
 
         String containerImage = testRequest.getImage();
 
@@ -62,12 +64,12 @@ public class JmeterOperateService {
         String reportId = testRequest.getEnv().get("REPORT_ID");
 
 
-        String testContainerId = DockerClientService.createContainers(dockerClient, testRequest, testId, containerImage).getId();
-        DockerClientService.startContainer(dockerClient, testContainerId);
+        String testContainerId = dockerClientService.createContainers(dockerClient, testRequest, testId, containerImage).getId();
+        dockerClientService.startContainer(dockerClient, testContainerId);
         LoggerUtil.info("Container create started testContainerId: " + testContainerId);
 
-        String reportContainerId = DockerClientService.createReportContainers(dockerClient, testRequest, testId, containerImage).getId();
-        DockerClientService.startContainer(dockerClient, reportContainerId);
+        String reportContainerId = dockerClientService.createReportContainers(dockerClient, testRequest, testId, containerImage).getId();
+        dockerClientService.startContainer(dockerClient, reportContainerId);
         LoggerUtil.info("Container create started reportContainerId: " + reportContainerId);
 
 
@@ -106,9 +108,9 @@ public class JmeterOperateService {
                     public void onComplete() {
                         // 清理文件夹
                         try {
-                            if (DockerClientService.existContainer(dockerClient, containerId) > 0) {
+                            if (dockerClientService.existContainer(dockerClient, containerId) > 0) {
 //                                copyTestResources(dockerClient, testContainerId, reportId, resourceIndex);
-                                DockerClientService.removeContainer(dockerClient, containerId);
+                                dockerClientService.removeContainer(dockerClient, containerId);
                             }
                             LoggerUtil.info("Remove container completed: " + containerId);
                         } catch (Exception e) {
@@ -168,7 +170,7 @@ public class JmeterOperateService {
                 .withNameFilter(Collections.singletonList(testId))
                 .exec();
         if (!CollectionUtils.isEmpty(list)) {
-            list.forEach(container -> DockerClientService.removeContainer(dockerClient, container.getId()));
+            list.forEach(container -> dockerClientService.removeContainer(dockerClient, container.getId()));
         }
     }
 
@@ -220,7 +222,7 @@ public class JmeterOperateService {
 
     public void stopContainer(String testId) {
         LoggerUtil.info("Receive stop container request, test: " + testId);
-        DockerClient dockerClient = DockerClientService.connectDocker();
+        DockerClient dockerClient = dockerClientService.connectDocker();
 
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
@@ -229,11 +231,11 @@ public class JmeterOperateService {
                 .withNameFilter(Collections.singletonList(testId))
                 .exec();
         // container stop
-        list.forEach(container -> DockerClientService.removeContainer(dockerClient, container.getId()));
+        list.forEach(container -> dockerClientService.removeContainer(dockerClient, container.getId()));
     }
 
     public List<Container> taskStatus(String testId) {
-        DockerClient dockerClient = DockerClientService.connectDocker();
+        DockerClient dockerClient = dockerClientService.connectDocker();
         List<Container> containerList = dockerClient.listContainersCmd()
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
                 .withNameFilter(Collections.singletonList(testId))
@@ -244,7 +246,7 @@ public class JmeterOperateService {
 
     public String logContainer(String testId) {
         LoggerUtil.info("Receive logs container request, test: " + testId);
-        DockerClient dockerClient = DockerClientService.connectDocker();
+        DockerClient dockerClient = dockerClientService.connectDocker();
 
         // container filter
         List<Container> list = dockerClient.listContainersCmd()
