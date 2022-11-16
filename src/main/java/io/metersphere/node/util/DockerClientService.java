@@ -10,7 +10,6 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import io.metersphere.node.controller.request.DockerLoginRequest;
 import io.metersphere.node.controller.request.TestRequest;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,10 +26,6 @@ public class DockerClientService {
     private String jmeterCores;
     @Value("${report.cpu.set:}")
     private String reportCores;
-    @Value("${report.realtime:true}")
-    private boolean reportRealtime;
-    @Value("${report.final:true}")
-    private boolean reportFinal;
     @Value("${split.file.size:500000}")
     private long splitFileSize;
 
@@ -39,20 +34,8 @@ public class DockerClientService {
         if (StringUtils.isBlank(jmeterCores) || StringUtils.isBlank(jmeterCores)) {
             int cores = Runtime.getRuntime().availableProcessors();
             if (cores >= 4) {
-                int lastIndex = cores - 1;
-                if (reportRealtime && reportFinal) {
-                    jmeterCores = "2-" + lastIndex;
-                    reportCores = "0-1";
-                } else if (reportRealtime) {
-                    jmeterCores = "1-" + lastIndex;
-                    reportCores = "0";
-                } else if (reportFinal) {
-                    jmeterCores = "1-" + lastIndex;
-                    reportCores = "0";
-                } else {
-                    jmeterCores = "2-" + lastIndex;
-                    reportCores = "0-1";
-                }
+                jmeterCores = "1-" + (cores - 1);
+                reportCores = "0";
             }
         }
     }
@@ -165,8 +148,6 @@ public class DockerClientService {
 
     private String[] getEnvs(TestRequest testRequest) {
         Map<String, String> env = testRequest.getEnv();
-        env.put("REPORT_REALTIME", BooleanUtils.toStringTrueFalse(reportRealtime));
-        env.put("REPORT_FINAL", BooleanUtils.toStringTrueFalse(reportFinal));
         env.put("SPLIT_FILE_SIZE", String.valueOf(splitFileSize));
         return env.keySet().stream().map(k -> k + "=" + env.get(k)).toArray(String[]::new);
     }
