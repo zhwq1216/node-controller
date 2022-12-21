@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.metersphere</groupId>
         <artifactId>metersphere</artifactId>
-        <version>main</version>
+        <version>spring-boot-3.0</version>
     </parent>
     <artifactId>node-controller</artifactId>
     <version>${revision}</version>
@@ -13,10 +13,6 @@
     <description>node-controller</description>
 
     <properties>
-        <java.version>11</java.version>
-        <jmeter.version>5.5</jmeter.version>
-        <nacos.version>1.1.3</nacos.version>
-        <dubbo.version>2.7.15</dubbo.version>
         <poi.version>5.1.0</poi.version>
     </properties>
 
@@ -50,8 +46,12 @@
         </dependency>
         <dependency>
             <groupId>com.github.docker-java</groupId>
-            <artifactId>docker-java</artifactId>
-            <!-- use latest version https://github.com/docker-java/docker-java/releases -->
+            <artifactId>docker-java-core</artifactId>
+            <version>${docker-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
             <version>${docker-java.version}</version>
         </dependency>
         <dependency>
@@ -197,8 +197,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
         </dependency>
 
         <!-- k8s client -->

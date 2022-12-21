@@ -7,14 +7,17 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Volume;
 import com.github.dockerjava.api.model.VolumesFrom;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientBuilder;
-import io.metersphere.node.controller.request.DockerLoginRequest;
+import com.github.dockerjava.core.DockerClientConfig;
+import com.github.dockerjava.core.DockerClientImpl;
+import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
+import com.github.dockerjava.transport.DockerHttpClient;
 import io.metersphere.node.controller.request.TestRequest;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,19 +53,15 @@ public class DockerClientService {
      * @return
      */
     public DockerClient connectDocker() {
-        return DockerClientBuilder.getInstance().build();
-    }
-
-    public DockerClient connectDocker(DockerLoginRequest request) {
-        if (StringUtils.isBlank(request.getRegistry()) || StringUtils.isBlank(request.getUsername()) || StringUtils.isBlank(request.getPassword())) {
-            return connectDocker();
-        }
-        DefaultDockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withRegistryUrl(request.getRegistry())
-                .withRegistryUsername(request.getUsername())
-                .withRegistryPassword(request.getPassword())
+        DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
+        DockerHttpClient httpClient = new ApacheDockerHttpClient.Builder()
+                .dockerHost(config.getDockerHost())
+                .sslConfig(config.getSSLConfig())
+                .maxConnections(100)
+                .connectionTimeout(Duration.ofSeconds(30))
+                .responseTimeout(Duration.ofSeconds(45))
                 .build();
-        return DockerClientBuilder.getInstance(config).build();
+        return DockerClientImpl.getInstance(config, httpClient);
     }
 
     /**

@@ -17,7 +17,7 @@ pipeline {
         pollSCM('0 * * * *')
     }
     environment {
-        JAVA_HOME = '/opt/jdk-11'
+        JAVA_HOME = '/opt/jdk-17'
         IMAGE_NAME = 'node-controller'
         IMAGE_PREFIX = 'registry.cn-qingdao.aliyuncs.com/metersphere'
     }
@@ -40,7 +40,7 @@ pipeline {
             steps {
                 configFileProvider([configFile(fileId: 'metersphere-maven', targetLocation: 'settings.xml')]) {
                     sh '''
-                        export JAVA_HOME=/opt/jdk-11
+                        export JAVA_HOME=/opt/jdk-17
                         export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH
                         export PATH=$JAVA_HOME/bin:$PATH
                         java -version

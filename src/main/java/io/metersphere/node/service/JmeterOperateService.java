@@ -15,7 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class JmeterOperateService {
         // 初始化kafka
         kafkaProducerService.init(bootstrapServers);
 
-        DockerClient dockerClient = dockerClientService.connectDocker(testRequest);
+        DockerClient dockerClient = dockerClientService.connectDocker();
 
         String containerImage = testRequest.getImage();
 
