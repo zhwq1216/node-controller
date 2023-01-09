@@ -17,4 +17,5 @@ public class MsgDTO {
     private String toReport;
     private boolean execEnd;
     private String content;
+    private String runMode;
 }
