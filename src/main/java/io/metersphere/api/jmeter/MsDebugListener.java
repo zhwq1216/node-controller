@@ -56,6 +56,7 @@ public class MsDebugListener extends AbstractListenerElement implements SampleLi
     private String reportId;
     private Map<String, Object> kafkaConfig;
     private boolean clearLog;
+    private String runMode;
 
     public String getTestId() {
         return testId;
@@ -81,6 +82,9 @@ public class MsDebugListener extends AbstractListenerElement implements SampleLi
         this.kafkaConfig = kafkaConfig;
     }
 
+    public void setRunMode (String runMode) {
+        this.runMode = runMode;
+    }
     @Override
     public Object clone() {
         MsDebugListener clone = (MsDebugListener) super.clone();
@@ -121,6 +125,7 @@ public class MsDebugListener extends AbstractListenerElement implements SampleLi
         dto.setContent(TEST_END);
         dto.setReportId("send." + this.getName());
         dto.setToReport(this.getName());
+        dto.setRunMode(this.runMode);
         LoggerUtil.debug("send. " + this.getName());
         producerService.sendDebug(this.reportId, dto, kafkaConfig);
         PoolExecBlockingQueueUtil.offer(this.getName());
@@ -149,6 +154,7 @@ public class MsDebugListener extends AbstractListenerElement implements SampleLi
             dto.setContent(e.getThreadGroup());
             dto.setReportId("send." + this.getName());
             dto.setToReport(this.getName());
+            dto.setRunMode(this.runMode);
             LoggerUtil.debug("send. " + this.getName());
             producerService.sendDebug(this.reportId, dto, kafkaConfig);
         } catch (Exception ex) {
@@ -172,6 +178,7 @@ public class MsDebugListener extends AbstractListenerElement implements SampleLi
                 dto.setExecEnd(false);
                 dto.setReportId("send." + this.getName());
                 dto.setToReport(this.getName());
+                dto.setRunMode(this.runMode);
 
                 String console = FixedCapacityUtil.getJmeterLogger(this.getReportId(), clearLog);
                 if (StringUtils.isNotEmpty(requestResult.getName()) && requestResult.getName().startsWith("Transaction=")) {

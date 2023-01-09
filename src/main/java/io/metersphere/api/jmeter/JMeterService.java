@@ -113,6 +113,7 @@ public class JMeterService {
         resultCollector.setProperty(TestElement.GUI_CLASS, SaveService.aliasToClass("ViewResultsFullVisualizer"));
         resultCollector.setEnabled(true);
         resultCollector.setClearLog(true);
+        resultCollector.setRunMode(request.getRunMode());
         if ((request.getExtendedParameters().containsKey(ExtendedParameter.SAVE_RESULT)
                 && Boolean.valueOf(request.getExtendedParameters().get(ExtendedParameter.SAVE_RESULT).toString()))) {
             resultCollector.setClearLog(false);
