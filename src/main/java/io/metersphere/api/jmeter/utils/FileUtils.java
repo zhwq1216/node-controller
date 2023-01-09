@@ -18,6 +18,9 @@ public class FileUtils {
     public static final String BODY_FILE_DIR = "/opt/metersphere/data/body";
     public static final String PROJECT_JAR_FILE_DIR = "/opt/metersphere/data/node/jar";
     public static final String JAR_PLUG_FILE_DIR = "/opt/metersphere/data/node/plug/jar";
+    public static final String IS_REF = "isRef";
+    public static final String FILE_ID = "fileId";
+    public static final String FILENAME = "filename";
 
     public static void createFiles(MultipartFile[] bodyFiles, String path) {
         if (bodyFiles != null && bodyFiles.length > 0) {
@@ -92,15 +95,21 @@ public class FileUtils {
                         BodyFile file = new BodyFile();
                         file.setId(arg.getParamName());
                         file.setName(arg.getPath());
+                        if (arg.getPropertyAsBoolean(IS_REF)) {
+                            file.setRefResourceId(source.getPropertyAsString(FILE_ID));
+                        }
                         files.add(file);
                     }
                 }
             } else if (key instanceof CSVDataSet) {
                 CSVDataSet source = (CSVDataSet) key;
-                if (source != null && StringUtils.isNotEmpty(source.getPropertyAsString("filename"))) {
+                if (source != null && StringUtils.isNotEmpty(source.getPropertyAsString(FILENAME))) {
                     BodyFile file = new BodyFile();
-                    file.setId(source.getPropertyAsString("filename"));
-                    file.setName(source.getPropertyAsString("filename"));
+                    file.setId(source.getPropertyAsString(FILENAME));
+                    file.setName(source.getPropertyAsString(FILENAME));
+                    if (source.getPropertyAsBoolean(IS_REF)) {
+                        file.setRefResourceId(source.getPropertyAsString(FILE_ID));
+                    }
                     files.add(file);
                 }
             }
