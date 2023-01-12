@@ -96,7 +96,7 @@ public class FileUtils {
                         file.setId(arg.getParamName());
                         file.setName(arg.getPath());
                         if (arg.getPropertyAsBoolean(IS_REF)) {
-                            file.setRefResourceId(source.getPropertyAsString(FILE_ID));
+                            file.setRefResourceId(arg.getPropertyAsString(FILE_ID));
                         }
                         files.add(file);
                     }
