@@ -1,14 +1,18 @@
 package io.metersphere.node.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.WaitContainerResultCallback;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.Frame;
 import com.github.dockerjava.api.model.Image;
 import com.github.dockerjava.core.InvocationBuilder;
+import io.kubernetes.client.openapi.models.V1Pod;
 import io.metersphere.node.controller.request.TestRequest;
 import io.metersphere.node.util.CompressUtils;
 import io.metersphere.node.util.DockerClientService;
+import io.metersphere.node.util.K8sPodClientService;
 import io.metersphere.utils.LoggerUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,7 +41,17 @@ public class JmeterOperateService {
     @Resource
     private DockerClientService dockerClientService;
 
+    @Resource
+    private K8sPodClientService k8sPodClientService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     public void startContainer(TestRequest testRequest) {
+
+        if (k8sPodClientService.isInK8sCluster()) {
+            k8sPodClientService.startTestPod(testRequest);
+            return;
+        }
         Map<String, String> env = testRequest.getEnv();
         String testId = env.get("TEST_ID");
         LoggerUtil.info("Receive start container request, test id: " + testId);
@@ -222,6 +236,10 @@ public class JmeterOperateService {
 
     public void stopContainer(String testId) {
         LoggerUtil.info("Receive stop container request, test: " + testId);
+        if (k8sPodClientService.isInK8sCluster()) {
+            k8sPodClientService.stopTestPod(testId);
+            return;
+        }
         DockerClient dockerClient = dockerClientService.connectDocker();
 
         // container filter
@@ -235,6 +253,26 @@ public class JmeterOperateService {
     }
 
     public List<Container> taskStatus(String testId) {
+        LoggerUtil.info("获取任务状态, testId="+testId);
+        if(k8sPodClientService.isInK8sCluster()) {
+            V1Pod v1Pod = k8sPodClientService.podStatus(testId);
+
+            if(v1Pod==null){
+                return Collections.emptyList();
+            }
+            String statusJson = "[{\"status\":\"running\"}]";
+            try{
+                final List<Container> containers = objectMapper
+                    .readValue(statusJson, new TypeReference<List<Container>>() {
+                    });
+                return containers;
+            }catch (Exception ex) {
+                LoggerUtil.error("获取任务状态转化json对象异常, testId="+testId, ex);
+                return Collections.emptyList();
+            }
+        }
+
+
         DockerClient dockerClient = dockerClientService.connectDocker();
         List<Container> containerList = dockerClient.listContainersCmd()
                 .withStatusFilter(Arrays.asList("created", "restarting", "running", "paused", "exited"))
@@ -246,6 +284,9 @@ public class JmeterOperateService {
 
     public String logContainer(String testId) {
         LoggerUtil.info("Receive logs container request, test: " + testId);
+        if(k8sPodClientService.isInK8sCluster()) {
+            return k8sPodClientService.podLog(testId);
+        }
         DockerClient dockerClient = dockerClientService.connectDocker();
 
         // container filter
