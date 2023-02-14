@@ -1,12 +1,25 @@
 apiVersion: v1   #API版本
 kind: Pod   #类型
 metadata:
-  name: jmeter-c79036d1-f6f1-40e6-9e91-f661a2ab7648   #节点名称
+  name: jmeter-${testId}   #节点名称
   #namespace: metersphere
   labels:
-    app: jmeter-c79036d1-f6f1-40e6-9e91-f661a2ab7648
+    app: jmeter-${testId}
+    test: ${testId}
 spec:
   restartPolicy : Never #重启策略[Always | Never | OnFailure]
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: test
+                  operator: In
+                  values:
+                    - ${testId}
+            topologyKey: kubernetes.io/hostname
+          weight: 100
   containers:
     - image: registry.cn-qingdao.aliyuncs.com/metersphere/jmeter-master:5.5-ms3-jdk11-bwton    #镜像名:TAG
       name: jmeter   #容器名称
@@ -18,21 +31,21 @@ spec:
           mountPath: /test
         - name: log
           mountPath: /jmeter-log
-#    - image: registry.cn-qingdao.aliyuncs.com/metersphere/jmeter-master:5.5-ms3-jdk11-bwton    #镜像名:TAG
-#      name: report   #容器名称
-#      args:
-#        - '-c'
-#        - /generate-report.sh
-#      command:
-#        - /bin/sh
-#      env:
-#        - name: APP_NAME
-#          value: 'jmeter-report'
-#      volumeMounts:    #挂载镜像 容器内路径
-#        - name: test
-#          mountPath: /test
-#        - name: log
-#          mountPath: /jmeter-log
+  #    - image: registry.cn-qingdao.aliyuncs.com/metersphere/jmeter-master:5.5-ms3-jdk11-bwton    #镜像名:TAG
+  #      name: report   #容器名称
+  #      args:
+  #        - '-c'
+  #        - /generate-report.sh
+  #      command:
+  #        - /bin/sh
+  #      env:
+  #        - name: APP_NAME
+  #          value: 'jmeter-report'
+  #      volumeMounts:    #挂载镜像 容器内路径
+  #        - name: test
+  #          mountPath: /test
+  #        - name: log
+  #          mountPath: /jmeter-log
   volumes:  #挂载镜像 本地路径
     - name: test
       emptyDir: {}

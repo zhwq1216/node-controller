@@ -1,7 +1,10 @@
 package io.metersphere.node.util;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,6 +59,10 @@ public class K8sPodClientService implements InitializingBean {
 
     @Setter
     @Getter
+    private String nodeNameSuffix = "";
+
+    @Setter
+    @Getter
     private ScheduledThreadPoolExecutor scheduledExecutorService;
 
 
@@ -75,6 +82,10 @@ public class K8sPodClientService implements InitializingBean {
             apiClient.setHttpClient(httpClient);
             Configuration.setDefaultApiClient(apiClient);
             nodeNamespace = Namespaces.getPodNamespace();
+            // 获取主机名-分隔的最后一部分作为节点名称后缀
+            String nodePodName = System.getenv("HOSTNAME");
+            String[] aTmp = nodePodName.split("-");
+            nodeNameSuffix = "-" + aTmp[aTmp.length-1];
         } catch (Exception ex) {
             log.warn("初始化k8sapiclient失败:{}", ex.getMessage(), ex);
             LoggerUtil.warn("初始化k8sapiclient失败:{}", ex.getMessage());
@@ -82,12 +93,16 @@ public class K8sPodClientService implements InitializingBean {
 
 
     }
+    
+    protected String getPodName(String testId) {
+        return "jmeter-" + testId + nodeNameSuffix;
+    }
 
     public V1Pod podStatus(String testId) {
         CoreV1Api api = new CoreV1Api();
         //指定分类
         // Yaml.addModelMap("v1", "Pod", V1Pod.class);
-        String podName = "jmeter-" + testId;
+        String podName = getPodName(testId);
         try{
             V1Pod v1Pod = api.readNamespacedPodStatus(podName, nodeNamespace, null);
             return v1Pod;
@@ -101,7 +116,7 @@ public class K8sPodClientService implements InitializingBean {
         CoreV1Api api = new CoreV1Api();
         //指定分类
         // Yaml.addModelMap("v1", "Pod", V1Pod.class);
-        String podName = "jmeter-" + testId;
+        String podName = getPodName(testId);
 
         try {
             String logMessage = api.readNamespacedPodLog(podName, nodeNamespace, "jmeter", false,
@@ -117,7 +132,7 @@ public class K8sPodClientService implements InitializingBean {
 
     public void stopTestPod(String testId) {
         CoreV1Api api = new CoreV1Api();
-        String podName = "jmeter-" + testId;
+        String podName = getPodName(testId);
         try {
             LoggerUtil.info("尝试删除pod, testId="+testId);
             api.deleteNamespacedPod(podName, nodeNamespace, null, null, 10, null, null, null);
@@ -150,7 +165,7 @@ public class K8sPodClientService implements InitializingBean {
     public void checkPodStatus(String testId) {
         CoreV1Api api = new CoreV1Api();
 
-        String podName = "jmeter-" + testId;
+        String podName = getPodName(testId);
 
 
     }
@@ -173,12 +188,16 @@ public class K8sPodClientService implements InitializingBean {
             CoreV1Api api = new CoreV1Api();
             //指定分类
             // Yaml.addModelMap("v1", "Pod", V1Pod.class);
-            String podName = "jmeter-" + testId;
-            //加载配置文件
-            File file = ResourceUtils.getFile("classpath:jmeter-pod.yaml");
-            V1Pod v1Pod = Yaml.loadAs(file, V1Pod.class);
+            String podName = getPodName(testId);
+            // 加载配置文件
+            // File file = ResourceUtils.getFile("classpath:jmeter-pod.yaml");
+            String ymlString = Files.readString(Paths.get(
+                    ResourceUtils.getURL("classpath:jmeter-pod.yaml").toURI()), Charset.forName("UTF-8"));
+            ymlString = ymlString.replace("${testId}", testId);
+            V1Pod v1Pod = Yaml.loadAs(ymlString, V1Pod.class);
             v1Pod.getMetadata().name(podName);
             v1Pod.getMetadata().putLabelsItem("app", podName);
+            v1Pod.getMetadata().putLabelsItem("test", testId);
 
             for (V1Container container : v1Pod.getSpec().getContainers()) {
                 envVars.forEach(envItem -> {
